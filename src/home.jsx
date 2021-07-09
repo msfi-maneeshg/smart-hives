@@ -1,8 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
-import {AppBar,Toolbar,Typography,CssBaseline,Container,Paper, Grid, FormControl,InputLabel,Select,MenuItem,TextField } from '@material-ui/core';
+import {AppBar,Toolbar,Typography,CssBaseline,Container,Paper, Grid, FormControl,InputLabel,Select,MenuItem,TextField,CircularProgress } from '@material-ui/core';
 import Chart from "react-google-charts";
 import clsx from 'clsx';
+import {Alert} from '@material-ui/lab';
+import mqtt from 'mqtt';
+
+// import {mqtt} from 'mqtt'
 
 const useStyles = makeStyles((theme) => ({
     root: {
@@ -38,6 +42,7 @@ export function Home(props) {
     const [hiveList,setHiveList] = useState({list:[]})
     const [isFarmerLoaded,setIsFarmerLoaded] = useState(false) 
     const [isHiveLoaded,setIsHiveLoaded] = useState(false) 
+    const [isNotificationStart,setIsNotificationStart] = useState(false) 
     const [weightArray,setWeightArray] = useState({data:[['x', 'Weight','Temperature','Humidity']]})
     const [isEventDataLoaded,setIsEventDataLoaded] = useState(false)
     const [eventIntervalId, setEventIntervalId] = useState(null);
@@ -48,6 +53,7 @@ export function Home(props) {
     var currentDateFormated = currentDate.getFullYear()+"-"+formatTwoDigits(currentDate.getMonth()+1)+"-"+formatTwoDigits(currentDate.getDate())
     const [selectedDate,setSelectedDate] = useState(currentDateFormated)
     const [cloudantArray,setCloudantArray] = useState({data:[['x','Temperature','Humidity']]})
+    const [notificationData,setNotificationData] = useState(null)
     //---------load farmer's list
     
     useEffect(() => {
@@ -101,8 +107,55 @@ export function Home(props) {
         }
     })
 
+    
+    
+    
     useEffect(() => {
         if(!isEventDataLoaded && farmer && hive){
+            setIsEventDataLoaded(true)
+            console.log("Connecting mqtt")
+            var connectOptions = {
+                rejectUnauthorized: false,
+                username:'a-62m15c-ubghzixbav',
+                password:'r+@6D*-wMzAw6U&4tA',
+                clientId: 'a:62m15c:test2',
+            };
+            var mqtt = require('mqtt');
+
+            var client = mqtt.connect('tcp://62m15c.messaging.internetofthings.ibmcloud.com/',connectOptions);  
+            client.subscribe("iot-2/type/"+farmer+"/id/"+hive+"/evt/HiveEvent/fmt/+");
+        
+            client.on('message', function (topic, message) {
+                // message is Buffer
+                var data = JSON.parse(message.toString())
+                setTemperature(data.temperature)
+                setHumidity(data.humidity)
+                setWeight(data.weight)
+
+                let tempWeight = weightArray.data
+                let NewtempWeight;
+                if(tempWeight.length > 50 ){
+                    // NewtempWeight = tempWeight.filter(function(element,index) {
+                    //     return index !== 1
+                    // });
+                    tempWeight.splice(1, 1);
+                    NewtempWeight = tempWeight
+                }else{
+                    NewtempWeight = tempWeight
+                }
+                let oldTimestamp = new Date(NewtempWeight[NewtempWeight.length-1][0])
+                let newTimestamp= new Date()
+                
+                if(newTimestamp.getTime() !== oldTimestamp.getTime()){
+                    NewtempWeight.push([newTimestamp,data.weight,data.temperature,data.humidity])
+                    setWeightArray({data:NewtempWeight})
+                }
+            });
+        }
+    });
+
+    useEffect(() => {
+        if(!isEventDataLoaded && farmer && hive && false){
             setIsEventDataLoaded(true)
             let newEventIntervalID = setInterval(() => {
                 // let isStatusOK = false;
@@ -128,9 +181,11 @@ export function Home(props) {
                     let tempWeight = weightArray.data
                     let NewtempWeight;
                     if(tempWeight.length > 50 ){
-                        NewtempWeight = tempWeight.filter(function(element,index) {
-                            return index !== 1
-                        });
+                        // NewtempWeight = tempWeight.filter(function(element,index) {
+                        //     return index !== 1
+                        // });
+                        tempWeight.splice(1, 1);
+                        NewtempWeight = tempWeight
                     }else{
                         NewtempWeight = tempWeight
                     }
@@ -142,7 +197,7 @@ export function Home(props) {
                         NewtempWeight.push([new Date(data[0].timestamp),data[0].data.weight,data[0].data.temperature,data[0].data.humidity])
                         setWeightArray({data:NewtempWeight})
                     }
-                    console.log(NewtempWeight.length)
+                    // console.log(NewtempWeight)
                 });
             }, 1000)
             if(eventIntervalId != null){
@@ -192,6 +247,34 @@ export function Home(props) {
         }
     })
 
+    useEffect(() => {
+        if(!isNotificationStart && farmer){
+            setIsNotificationStart(true)
+            setInterval(() => {
+                const requestOptions = {
+                    method: 'GET',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization':'Basic YXBpa2V5LXYyLTI5bW51dWFyeXNuejZ6d3YxbnA4ZnpwODA4YTVlNDA1Mm00NzgzaGprZmxoOjk5Mzg1NmNhODczZWZiMzNjYzY3ZmM2YzgyZDZjN2U4'
+                    },
+                };
+                
+                let apiUrl = "https://433c346a-cb7c-4736-8e95-0bc99303fe1a-bluemix.cloudant.com/iotp-notification/_all_docs?include_docs=true&limit=1"
+            
+            
+                fetch(apiUrl, requestOptions)
+                .then((response) => {
+                    return response.json()   
+                })
+                .then((data) => {
+                    if(data.total_rows > 0){
+                        setNotificationData(data.rows[0].doc)
+                    }
+                });
+            }, 10000)
+        }
+    })
+
 
     const handleChangeFarmer = (e) => {
         setFarmer(e.target.value)
@@ -208,6 +291,28 @@ export function Home(props) {
     const changeDate = (e) => {
         setSelectedDate(e.target.value)
         setIsDBDataLoaded(false)
+    }
+
+    const handleCloseNotification = () => {
+        const requestOptions = {
+            method: 'DELETE',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization':'Basic YXBpa2V5LXYyLTI5bW51dWFyeXNuejZ6d3YxbnA4ZnpwODA4YTVlNDA1Mm00NzgzaGprZmxoOjk5Mzg1NmNhODczZWZiMzNjYzY3ZmM2YzgyZDZjN2U4'
+            },
+        };
+        
+        let apiUrl = "https://433c346a-cb7c-4736-8e95-0bc99303fe1a-bluemix.cloudant.com/iotp-notification/"+notificationData._id
+    
+    
+        fetch(apiUrl, requestOptions)
+        .then((response) => {
+            return response.json()   
+        })
+        .then((data) => {
+            setNotificationData(null)
+            setIsNotificationStart(false)
+        });
     }
     
   return (
@@ -267,6 +372,14 @@ export function Home(props) {
                         </FormControl>
                     </Paper>
                     </Grid>
+                    { notificationData !== null &&
+                    <Grid item xs={12}>
+                        <Paper className={classes.paper}>
+                            <Alert severity="warning" onClose={() => handleCloseNotification()}>Humidity is low for {notificationData.deviceId}</Alert>
+                        </Paper>
+                    </Grid>
+                    }
+
                     { farmer && hive && <>
                     <Grid item xs={4}>
                         <Paper className={clsx(classes.paper,classes.paperCenter)}>
@@ -348,6 +461,7 @@ export function Home(props) {
                     <Grid item xs={12}>
                         <Paper className={clsx(classes.paper)}>
                             <h3>Last event data</h3>
+                            {weightArray.data && weightArray.data.length > 1 ?
                             <Chart
                                 height={'500px'}
                                 chartType="LineChart"
@@ -362,7 +476,9 @@ export function Home(props) {
                                     },
                                 }}
                                 rootProps={{ 'data-testid': '1' }}
-                            />
+                            />:
+                            <CircularProgress />       
+                            }
                         </Paper>
                     </Grid>
 
@@ -406,5 +522,3 @@ export function Home(props) {
     </>
   );
 }
-
-export default Home;
