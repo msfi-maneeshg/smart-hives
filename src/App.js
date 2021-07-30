@@ -1,8 +1,8 @@
-import logo from './logo.svg';
-import './App.css';
-import {Home} from './home'
 
-function App() {
+import './App.css';
+import {Home} from './home2'
+
+export function App() {
   return (
     <>
     <Home/>

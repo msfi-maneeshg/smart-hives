@@ -113,7 +113,6 @@ export function Home(props) {
     useEffect(() => {
         if(!isEventDataLoaded && farmer && hive){
             setIsEventDataLoaded(true)
-            console.log("Connecting mqtt")
             var connectOptions = {
                 rejectUnauthorized: false,
                 username:'a-62m15c-ubghzixbav',
