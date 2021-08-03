@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
-import {AppBar,Toolbar,Typography,CssBaseline,Container,Paper, Grid, FormControl,InputLabel,Select,MenuItem,TableCell,TableRow,TableBody,TableContainer,Table,TableHead,IconButton,Collapse ,Divider,TextField,ButtonGroup,Button,CircularProgress } from '@material-ui/core';
+import {AppBar,Toolbar,Typography,CssBaseline,Container,Paper, Grid, FormControl,InputLabel,Select,MenuItem,TableCell,TableRow,TableBody,TableContainer,Table,TableHead,IconButton,Collapse ,TextField,ButtonGroup,Button,CircularProgress } from '@material-ui/core';
 import {ExpandMore,ExpandLess} from '@material-ui/icons'
 import Chart from "react-google-charts";
+import { WiThermometer,WiHumidity, } from "react-icons/wi";
+import { GiWeight } from "react-icons/gi";
+import {Alert} from '@material-ui/lab';
 
 const useStyles = makeStyles((theme) => ({
     root: {
@@ -63,7 +66,11 @@ const useStyles = makeStyles((theme) => ({
         marginTop:'5px',
         marginBottom:'5px',
         justifyContent:"center"
+    },
+    fontIcon:{
+        fontSize:'50px'
     }
+
 }));
 
 export function Home(){
@@ -72,13 +79,17 @@ export function Home(){
     const [farmerList,setFarmerList] = useState({list:[]})
     const [isFarmerLoaded,setIsFarmerLoaded] = useState(false) 
     var currentDate = new Date()
+    currentDate.setHours(currentDate.getHours()-6) // get 6 hours back date time default
     let formatTwoDigits = (digit) => ("0" + digit).slice(-2);
-    var currentDateFormated = currentDate.getFullYear()+"-"+formatTwoDigits(currentDate.getMonth()+1)+"-"+formatTwoDigits(currentDate.getDate())
+    var currentDateFormated = currentDate.getUTCFullYear()+"-"+formatTwoDigits(currentDate.getUTCMonth()+1)+"-"+formatTwoDigits(currentDate.getUTCDate())
     const [selectedDate,setSelectedDate] = useState(currentDateFormated)
     const [selectedTab,setSelectedTab] = useState(currentQuarterOfDay())
     const [isDataLoaded,setIsDataLoaded] = useState(false)
     const [tableDataLoader,setTableDataLoader] = useState(false)
     const [hiveAggregatedData,setHiveAggregatedData] = useState({list:[]})
+    const [isNotificationStart,setIsNotificationStart] = useState(false) 
+    const [notificationData,setNotificationData] = useState(null)
+
     const handleChangeFarmer = (e) => {
         setFarmer(e.target.value)
         setIsDataLoaded(false)
@@ -114,6 +125,11 @@ export function Home(){
         if(!isDataLoaded && farmer){
             setIsDataLoaded(true)
             setTableDataLoader(true)
+            var selectedDateTemp =  new Date(selectedDate)
+            var startKeyDate = selectedDateTemp.getUTCFullYear()+"_"+formatTwoDigits(selectedDateTemp.getUTCMonth()+1)+"_"+formatTwoDigits(selectedDateTemp.getUTCDate())
+            var nextDate = selectedDateTemp
+            nextDate.setUTCDate(nextDate.getUTCDate() + 1)
+            var endKeyDate = nextDate.getUTCFullYear()+"_"+formatTwoDigits(nextDate.getUTCMonth()+1)+"_"+formatTwoDigits(nextDate.getUTCDate())
             const requestOptions = {
                 method: 'POST',
                 headers: { 
@@ -122,6 +138,8 @@ export function Home(){
                 },
                 body: JSON.stringify({ 
                     include_docs:  true,
+                    startkey:startKeyDate,
+                    endkey:endKeyDate,
                 })
             };
             
@@ -133,12 +151,10 @@ export function Home(){
                 return response.json()   
             })
             .then((data) => {
-               var selectedDateTemp =  new Date(selectedDate)
-               console.log(selectedDateTemp.getUTCFullYear()+"_"+formatTwoDigits(selectedDateTemp.getUTCMonth())+"_"+formatTwoDigits(selectedDateTemp.getUTCDate()))
                 if(!data.error){
                     var tempData = [];
                     data.rows.forEach(element => {
-                        if(element.id.includes(selectedTab) && element.id.includes(selectedDateTemp.getUTCFullYear()+"_"+formatTwoDigits(selectedDateTemp.getUTCMonth()+1)+"_"+formatTwoDigits(selectedDateTemp.getUTCDate()))){
+                        if(element.id.includes(selectedTab)){
                             tempData.push(element) 
                         }
                     });
@@ -147,6 +163,34 @@ export function Home(){
                 }
             });
             
+        }
+    },[isDataLoaded, farmer, selectedDate, selectedTab])
+
+    useEffect(() => {
+        if(!isNotificationStart && farmer){
+            setIsNotificationStart(true)
+            setInterval(() => {
+                const requestOptions = {
+                    method: 'GET',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization':'Basic YXBpa2V5LXYyLTI5bW51dWFyeXNuejZ6d3YxbnA4ZnpwODA4YTVlNDA1Mm00NzgzaGprZmxoOjk5Mzg1NmNhODczZWZiMzNjYzY3ZmM2YzgyZDZjN2U4'
+                    },
+                };
+                
+                let apiUrl = 'https://433c346a-cb7c-4736-8e95-0bc99303fe1a-bluemix.cloudant.com/iotp-notification/_design/iotp/_view/by-deviceType?key="'+farmer+'"'
+            
+            
+                fetch(apiUrl, requestOptions)
+                .then((response) => {
+                    return response.json()   
+                })
+                .then((data) => {
+                    if(data.total_rows > 0){
+                        setNotificationData(data.rows)
+                    }
+                });
+            }, 10000)
         }
     })
 
@@ -162,6 +206,34 @@ export function Home(){
         setIsDataLoaded(false)
         setHiveAggregatedData({list:[]})
         
+    }
+
+    const handleCloseNotification = (e,info) => {
+        const requestOptions = {
+            method: 'DELETE',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization':'Basic YXBpa2V5LXYyLTI5bW51dWFyeXNuejZ6d3YxbnA4ZnpwODA4YTVlNDA1Mm00NzgzaGprZmxoOjk5Mzg1NmNhODczZWZiMzNjYzY3ZmM2YzgyZDZjN2U4'
+            },
+        };
+        
+        let apiUrl = "https://433c346a-cb7c-4736-8e95-0bc99303fe1a-bluemix.cloudant.com/iotp-notification/"+info.value._id+"?rev="+info.value._rev
+    
+    
+        fetch(apiUrl, requestOptions)
+        .then((response) => {
+            return response.json()   
+        })
+        .then((data) => {
+            if(data.ok){
+                var updatedRows = [...notificationData]
+                var indexToRemove = updatedRows.findIndex(x => x.value._id === info.value._id);
+                if(indexToRemove > -1){
+                    updatedRows.splice(indexToRemove, 1)
+                    setNotificationData(updatedRows);
+                }
+            }
+        });
     }
 
     const rowHiveData = hiveAggregatedData.list.map((hiveData,index) => (
@@ -202,34 +274,41 @@ export function Home(){
                                 
                                 </Select>
                             </FormControl>
+                            <TextField
+                                id="date"
+                                label="Date"
+                                type="date"
+                                variant="outlined"
+                                onChange={(e) => changeDate(e)}
+                                value={selectedDate}
+                                className={classes.formControl}
+                                InputProps={{inputProps: {max: currentDateFormated}}}
+                            />
                         </Paper>
                     </Grid>
+                    { notificationData !== null &&  notificationData.length !== 0 &&
+                        <Grid item xs={12}>
+                        <Paper className={classes.paper}>
+                        <Typography variant="h6" gutterBottom>Alerts</Typography>
+                            {notificationData.map((data,index) => (
+                                <Alert key={index} severity="warning"  onClose={(e) => handleCloseNotification(e,data)}>Alert for {data.value.deviceId}, Temperature is : {data.value.temperature}°C and Humidity is : {data.value.humidity}%</Alert>
+                                ))
+                            }
+                        </Paper>
+                        </Grid>
+                    
+                    
+                    }
                     {farmer && 
                     <>
                     <Grid item xs={12}>
-                        <Paper className={classes.paper}>
-                            <Grid container spacing={3}>
-                                <Grid item xs={3}>
-                                    <TextField
-                                        id="date"
-                                        label="Result for"
-                                        type="date"
-                                        onChange={(e) => changeDate(e)}
-                                        value={selectedDate}
-                                        className={classes.textField}
-                                        InputProps={{inputProps: {max: currentDateFormated}}}
-                                    />
-                                </Grid>
-                                <Grid item xs={9}>
-                                    <ButtonGroup color="primary" aria-label="contained primary button group">
-                                        <Button variant={selectedTab==="Q1" && "contained"} onClick={() =>changeQuarterTab("Q1")}>Q1 (12:01AM-06:00AM)</Button>
-                                        <Button variant={selectedTab==="Q2" && "contained"} onClick={() =>changeQuarterTab("Q2")}>Q2 (06:01AM-12:00PM)</Button>
-                                        <Button variant={selectedTab==="Q3" && "contained"} onClick={() =>changeQuarterTab("Q3")}>Q3 (12:01PM-06:00PM)</Button>
-                                        <Button variant={selectedTab==="Q4" && "contained"} onClick={() =>changeQuarterTab("Q4")}>Q4 (06:01PM-12:00AM)</Button>
-                                    </ButtonGroup>
-                                </Grid>
-                            </Grid>
-                            
+                        <Paper className={classes.paper} style={{textAlign:'center'}} >
+                            <ButtonGroup color="primary" aria-label="contained primary button group">
+                                <Button variant={selectedTab==="Q1" && "contained"} onClick={() =>changeQuarterTab("Q1")}>Q1 (12:00AM-06:00AM)</Button>
+                                <Button variant={selectedTab==="Q2" && "contained"} onClick={() =>changeQuarterTab("Q2")}>Q2 (06:00AM-12:00PM)</Button>
+                                <Button variant={selectedTab==="Q3" && "contained"} onClick={() =>changeQuarterTab("Q3")}>Q3 (12:00PM-06:00PM)</Button>
+                                <Button variant={selectedTab==="Q4" && "contained"} onClick={() =>changeQuarterTab("Q4")}>Q4 (06:00PM-12:00AM)</Button>
+                            </ButtonGroup>
                         </Paper>
                     </Grid>
                     <Grid item xs={12}>
@@ -247,7 +326,7 @@ export function Home(){
                                 <TableBody>
                                     {tableDataLoader?<RowDataLoading/>:
                                     <>
-                                    {hiveAggregatedData.list.length == 0 && isDataLoaded ?<RowNotFound /> :rowHiveData}
+                                    {hiveAggregatedData.list.length === 0 && isDataLoaded ?<RowNotFound /> :rowHiveData}
                                     </>}
                                     
                                 </TableBody>
@@ -295,7 +374,7 @@ function Rows(props){
             }
             setChartData({list:tempList})
         }
-    })
+    },[props.doc.data, isDataLoaded, chartData.list])
 
     return(
         <>
@@ -318,19 +397,22 @@ function Rows(props){
                         <hr/>
                         <Grid container spacing={3} className={classes.dataBoxOuter}>
                             <Grid item xs={3} className={classes.dataBox}>
-                                <div>Temperature</div>
+                                <div><WiThermometer className={classes.fontIcon} style={{color:'#3566cc'}}/></div>
+                                <hr/>
                                 <div>Avg : {props.doc.avgTemperature}°C</div>
                                 <div>Min : {props.doc.minTemperature}°C</div>
                                 <div>Max : {props.doc.maxTemperature}°C</div>
                             </Grid>
                             <Grid item xs={3} className={classes.dataBox}>
-                                <div>Humidity</div>
+                                <div><WiHumidity className={classes.fontIcon} style={{color:'#dc392a'}}/></div>
+                                <hr/>
                                 <div>Avg : {props.doc.avgHumidity}%</div>
                                 <div>Min : {props.doc.minHumidity}%</div>
                                 <div>Max : {props.doc.maxHumidity}%</div>
                             </Grid>
                             <Grid item xs={3} className={classes.dataBox}>
-                                <div>Weight</div>
+                                <div ><GiWeight className={classes.fontIcon} style={{color:'#ed9720'}}/></div>
+                                <hr/>
                                 <div>Avg : {props.doc.avgWeight} Kg</div>
                                 <div>Min : {props.doc.minWeight} Kg</div>
                                 <div>Max : {props.doc.maxWeight} Kg</div>
