@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
-import {AppBar,Toolbar,Typography,CssBaseline,Container,Paper, Grid, FormControl,InputLabel,Select,MenuItem,TableCell,TableRow,TableBody,TableContainer,Table,TableHead,IconButton,Collapse ,TextField,ButtonGroup,Button,CircularProgress } from '@material-ui/core';
+import {AppBar,Toolbar,Typography,CssBaseline,Container,Paper, Grid, FormControl,InputLabel,Select,MenuItem,TableCell,TableRow,TableBody,TableContainer,Table,TableHead,IconButton,Collapse ,TextField,CircularProgress,Grow } from '@material-ui/core';
 import {ExpandMore,ExpandLess} from '@material-ui/icons'
 import Chart from "react-google-charts";
 import { WiThermometer,WiHumidity, } from "react-icons/wi";
@@ -79,17 +79,16 @@ export function Home(){
     const [farmerList,setFarmerList] = useState({list:[]})
     const [isFarmerLoaded,setIsFarmerLoaded] = useState(false) 
     var currentDate = new Date()
-    currentDate.setHours(currentDate.getHours()-6) // get 6 hours back date time default
+    currentDate.setHours(currentDate.getHours()-1) // get 1 hours back date time default
     let formatTwoDigits = (digit) => ("0" + digit).slice(-2);
     var currentDateFormated = currentDate.getUTCFullYear()+"-"+formatTwoDigits(currentDate.getUTCMonth()+1)+"-"+formatTwoDigits(currentDate.getUTCDate())
     const [selectedDate,setSelectedDate] = useState(currentDateFormated)
-    const [selectedTab,setSelectedTab] = useState(currentQuarterOfDay())
     const [isDataLoaded,setIsDataLoaded] = useState(false)
     const [tableDataLoader,setTableDataLoader] = useState(false)
     const [hiveAggregatedData,setHiveAggregatedData] = useState({list:[]})
     const [isNotificationStart,setIsNotificationStart] = useState(false) 
     const [notificationData,setNotificationData] = useState(null)
-
+    const [period, setPeriod] = useState(formatTwoDigits(currentDate.getUTCHours())+"-"+formatTwoDigits(currentDate.getUTCHours()+1));
     const handleChangeFarmer = (e) => {
         setFarmer(e.target.value)
         setIsDataLoaded(false)
@@ -126,24 +125,15 @@ export function Home(){
             setIsDataLoaded(true)
             setTableDataLoader(true)
             var selectedDateTemp =  new Date(selectedDate)
-            var startKeyDate = selectedDateTemp.getUTCFullYear()+"_"+formatTwoDigits(selectedDateTemp.getUTCMonth()+1)+"_"+formatTwoDigits(selectedDateTemp.getUTCDate())
-            var nextDate = selectedDateTemp
-            nextDate.setUTCDate(nextDate.getUTCDate() + 1)
-            var endKeyDate = nextDate.getUTCFullYear()+"_"+formatTwoDigits(nextDate.getUTCMonth()+1)+"_"+formatTwoDigits(nextDate.getUTCDate())
+            var startKeyDate = selectedDateTemp.getUTCFullYear()+"-"+formatTwoDigits(selectedDateTemp.getUTCMonth()+1)+"-"+formatTwoDigits(selectedDateTemp.getUTCDate())
             const requestOptions = {
-                method: 'POST',
+                method: 'GET',
                 headers: { 
                     'Content-Type': 'application/json',
-                    'Authorization':'Basic YXBpa2V5LXYyLTI5bW51dWFyeXNuejZ6d3YxbnA4ZnpwODA4YTVlNDA1Mm00NzgzaGprZmxoOjk5Mzg1NmNhODczZWZiMzNjYzY3ZmM2YzgyZDZjN2U4'
-                },
-                body: JSON.stringify({ 
-                    include_docs:  true,
-                    startkey:startKeyDate,
-                    endkey:endKeyDate,
-                })
+                }
             };
-            
-            let apiUrl = "https://433c346a-cb7c-4736-8e95-0bc99303fe1a-bluemix.cloudant.com/iotp_62m15c_farmer-1/_all_docs"
+            var tempFarmer = (farmer==="Farmer-1-Hives")?"farmer-1":farmer;
+            let apiUrl = "http://localhost:8000/hive-data/"+tempFarmer+"/"+startKeyDate+"/"+period
         
 
             fetch(apiUrl, requestOptions)
@@ -151,20 +141,16 @@ export function Home(){
                 return response.json()   
             })
             .then((data) => {
-                if(!data.error){
-                    var tempData = [];
-                    data.rows.forEach(element => {
-                        if(element.id.includes(selectedTab)){
-                            tempData.push(element) 
-                        }
-                    });
-                    setHiveAggregatedData({list:tempData})
-                    setTableDataLoader(false)
+                if(data && data.length > 0){
+                    setHiveAggregatedData({list:data})   
+                }else{
+                    setHiveAggregatedData({list:[]})  
                 }
+                setTableDataLoader(false)
             });
             
         }
-    },[isDataLoaded, farmer, selectedDate, selectedTab])
+    },[isDataLoaded, farmer, selectedDate])
 
     useEffect(() => {
         if(!isNotificationStart && farmer){
@@ -190,7 +176,7 @@ export function Home(){
                         setNotificationData(data.rows)
                     }
                 });
-            }, 10000)
+            }, 60000)
         }
     })
 
@@ -201,8 +187,8 @@ export function Home(){
     }
 
 
-    const changeQuarterTab = (tabID) => {
-        setSelectedTab(tabID)
+    const handleChangePeriod = (e) => {
+        setPeriod(e.target.value)
         setIsDataLoaded(false)
         setHiveAggregatedData({list:[]})
         
@@ -237,9 +223,17 @@ export function Home(){
     }
 
     const rowHiveData = hiveAggregatedData.list.map((hiveData,index) => (
-        <Rows key={index} {...selectedTab} {...hiveData}/>
+        <Rows key={index} {...hiveData}/>
     ))
 
+    const PeriodList = [];
+    for(var i = 0 ;i< 24;i++){
+        var periodString = formatTwoDigits(i)+"-"+formatTwoDigits(i+1)
+        if(i === 23){
+            periodString = formatTwoDigits(i)+"-"+formatTwoDigits(0)
+        }
+        PeriodList.push(periodString)
+    }
     return(
         <>
       <CssBaseline />
@@ -279,11 +273,30 @@ export function Home(){
                                 label="Date"
                                 type="date"
                                 variant="outlined"
+                                format="dd/MM/yyyy"
                                 onChange={(e) => changeDate(e)}
                                 value={selectedDate}
                                 className={classes.formControl}
                                 InputProps={{inputProps: {max: currentDateFormated}}}
                             />
+                            <FormControl variant="outlined" className={classes.formControl}>
+                                <InputLabel id="Period-label">Period</InputLabel>
+                                <Select
+                                labelId="Period-label"
+                                id="Period"
+                                value={period}
+                                onChange={(e) => handleChangePeriod(e)}
+                                label="Period"
+                                >
+                                {
+                                    PeriodList.length > 0 && PeriodList.map((value,index) => (
+                                        <MenuItem key={index} value={value}>{value}</MenuItem>
+                                    ))
+                                }
+                                
+                                </Select>
+                            </FormControl>
+                            
                         </Paper>
                     </Grid>
                     { notificationData !== null &&  notificationData.length !== 0 &&
@@ -296,44 +309,30 @@ export function Home(){
                             }
                         </Paper>
                         </Grid>
-                    
-                    
                     }
                     {farmer && 
-                    <>
-                    <Grid item xs={12}>
-                        <Paper className={classes.paper} style={{textAlign:'center'}} >
-                            <ButtonGroup color="primary" aria-label="contained primary button group">
-                                <Button variant={selectedTab==="Q1" && "contained"} onClick={() =>changeQuarterTab("Q1")}>Q1 (12:00AM-06:00AM)</Button>
-                                <Button variant={selectedTab==="Q2" && "contained"} onClick={() =>changeQuarterTab("Q2")}>Q2 (06:00AM-12:00PM)</Button>
-                                <Button variant={selectedTab==="Q3" && "contained"} onClick={() =>changeQuarterTab("Q3")}>Q3 (12:00PM-06:00PM)</Button>
-                                <Button variant={selectedTab==="Q4" && "contained"} onClick={() =>changeQuarterTab("Q4")}>Q4 (06:00PM-12:00AM)</Button>
-                            </ButtonGroup>
-                        </Paper>
-                    </Grid>
-                    <Grid item xs={12}>
-                        <TableContainer component={Paper}>
-                            <Table aria-label="collapsible table">
-                                <TableHead>
-                                    <TableRow>
-                                        <TableCell>Hive</TableCell>
-                                        <TableCell align="right">Temperature&nbsp;(°C)</TableCell>
-                                        <TableCell align="right">Humidity&nbsp;(%)</TableCell>
-                                        <TableCell align="right">Weight&nbsp;(Kg)</TableCell>
-                                        <TableCell align="right">View</TableCell>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {tableDataLoader?<RowDataLoading/>:
-                                    <>
-                                    {hiveAggregatedData.list.length === 0 && isDataLoaded ?<RowNotFound /> :rowHiveData}
-                                    </>}
-                                    
-                                </TableBody>
-                            </Table>
-                        </TableContainer>
-                    </Grid>
-                    </>                        
+                        <Grid item xs={12}>
+                            <TableContainer component={Paper}>
+                                <Table aria-label="collapsible table">
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell>Hive</TableCell>
+                                            <TableCell align="right">Temperature&nbsp;(°C)</TableCell>
+                                            <TableCell align="right">Humidity&nbsp;(%)</TableCell>
+                                            <TableCell align="right">Weight&nbsp;(Kg)</TableCell>
+                                            <TableCell align="right">View</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {tableDataLoader?<RowDataLoading/>:
+                                        <>
+                                        {hiveAggregatedData.list.length === 0 && isDataLoaded ?<RowNotFound /> :rowHiveData}
+                                        </>}
+                                        
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        </Grid>                       
                     }
                 </Grid>
             </div>
@@ -357,6 +356,7 @@ function currentQuarterOfDay(){
     }
     return quarterOfDay
 }
+
 function Rows(props){
     const [open, setOpen] = useState(false);
     const [isDataLoaded, setIsDataLoaded] = useState(false);
@@ -364,27 +364,29 @@ function Rows(props){
     const [chartData,setChartData] = useState({list:[['x','Temperature','Humidity','Weight']]});
 
     useEffect(() => {
-        if(props.doc.data && !isDataLoaded){
-            var sortedData = props.doc.data 
+        if(props.data && !isDataLoaded){
+            var sortedData = props.data 
             sortedData.sort((a, b) => a.timestamp > b.timestamp ? 1 : -1)
             setIsDataLoaded(true)
             var tempList = chartData.list;
             for(var i = 0;i< sortedData.length;i++){
-                tempList.push([sortedData[i].timestamp,sortedData[i].temperature,sortedData[i].humidity,sortedData[i].weight])
+                var timestamp = new Date(sortedData[i].timestamp)
+                var timeString = new Date(timestamp.getUTCFullYear(),timestamp.getUTCMonth(),timestamp.getUTCDate(),timestamp.getUTCHours(),timestamp.getUTCMinutes(),timestamp.getUTCSeconds(),timestamp.getUTCMilliseconds())
+                tempList.push([timeString,sortedData[i].temperature,sortedData[i].humidity,sortedData[i].weight])
             }
             setChartData({list:tempList})
         }
-    },[props.doc.data, isDataLoaded, chartData.list])
+    },[props.data, isDataLoaded, chartData.list])
 
     return(
         <>
             <TableRow className={classes.root}>
                 <TableCell component="th" scope="row">
-                    {props.doc.deviceID}
+                    {props.deviceID}
                 </TableCell>
-                <TableCell align="right">{props.doc.avgTemperature}</TableCell>
-                <TableCell align="right">{props.doc.avgHumidity}</TableCell>
-                <TableCell align="right">{props.doc.avgWeight}</TableCell>
+                <TableCell align="right">{props.avgTemperature}</TableCell>
+                <TableCell align="right">{props.avgHumidity}</TableCell>
+                <TableCell align="right">{props.avgWeight}</TableCell>
                 <TableCell align="right">
                     <IconButton aria-label="expand row" size="small" onClick={() => setOpen(!open)}>
                         {open ? <ExpandLess /> : <ExpandMore />}
@@ -395,29 +397,36 @@ function Rows(props){
                 <TableCell  style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={5}>
                     <Collapse in={open} timeout="auto" unmountOnExit>
                         <hr/>
+                        
                         <Grid container spacing={3} className={classes.dataBoxOuter}>
-                            <Grid item xs={3} className={classes.dataBox}>
-                                <div><WiThermometer className={classes.fontIcon} style={{color:'#3566cc'}}/></div>
-                                <hr/>
-                                <div>Avg : {props.doc.avgTemperature}°C</div>
-                                <div>Min : {props.doc.minTemperature}°C</div>
-                                <div>Max : {props.doc.maxTemperature}°C</div>
-                            </Grid>
-                            <Grid item xs={3} className={classes.dataBox}>
-                                <div><WiHumidity className={classes.fontIcon} style={{color:'#dc392a'}}/></div>
-                                <hr/>
-                                <div>Avg : {props.doc.avgHumidity}%</div>
-                                <div>Min : {props.doc.minHumidity}%</div>
-                                <div>Max : {props.doc.maxHumidity}%</div>
-                            </Grid>
-                            <Grid item xs={3} className={classes.dataBox}>
-                                <div ><GiWeight className={classes.fontIcon} style={{color:'#ed9720'}}/></div>
-                                <hr/>
-                                <div>Avg : {props.doc.avgWeight} Kg</div>
-                                <div>Min : {props.doc.minWeight} Kg</div>
-                                <div>Max : {props.doc.maxWeight} Kg</div>
-                            </Grid>
-                            {chartData.list.length > 1 &&<Grid item xs={12} className={classes.dataBox}>
+                            <Grow in={open} {...(open ? { timeout: 1000 } : {})}>
+                                <Grid item xs={3} className={classes.dataBox}>
+                                    <WiThermometer className={classes.fontIcon} style={{color:'#3566cc'}}/>
+                                    <hr/>
+                                    <div>Avg : {props.avgTemperature}°C</div>
+                                    <div>Min : {props.minTemperature}°C</div>
+                                    <div>Max : {props.maxTemperature}°C</div>
+                                </Grid>
+                            </Grow>
+                            <Grow in={open} {...(open ? { timeout: 1500 } : {})}>
+                                <Grid item xs={3} className={classes.dataBox}>
+                                    <WiHumidity className={classes.fontIcon} style={{color:'#dc392a'}}/>
+                                    <hr/>
+                                    <div>Avg : {props.avgHumidity}%</div>
+                                    <div>Min : {props.minHumidity}%</div>
+                                    <div>Max : {props.maxHumidity}%</div>
+                                </Grid>
+                            </Grow>
+                            <Grow in={open} {...(open ? { timeout: 2000 } : {})}>
+                                <Grid item xs={3} className={classes.dataBox}>
+                                    <GiWeight className={classes.fontIcon} style={{color:'#ed9720'}}/>
+                                    <hr/>
+                                    <div>Avg : {props.avgWeight} Kg</div>
+                                    <div>Min : {props.minWeight} Kg</div>
+                                    <div>Max : {props.maxWeight} Kg</div>
+                                </Grid>
+                            </Grow>
+                            {chartData.list.length > 1 &&<Grow in={open} {...(open ? { timeout: 2500 } : {})}><Grid item xs={12} className={classes.dataBox}>
                                 
                                 <Chart
                                     height={'500px'}
@@ -430,13 +439,29 @@ function Rows(props){
                                         },
                                         vAxis: {
                                         title: 'Temperature / Humidity / Weight',
+                                        minValue: 0,
+                                        maxValue: 100
                                         },
+                                        animation: {
+                                            duration: 2000,
+                                            easing: 'linear',
+                                            startup: true,
+                                          },
                                     }}
+                                    chartEvents={[
+                                        {
+                                          eventName: 'animationfinish',
+                                          callback: () => {
+                                            console.log('Animation Finished')
+                                          },
+                                        },
+                                      ]}
                                     rootProps={{ 'data-testid': '1' }}
                                 />
                                 
-                            </Grid>}
+                            </Grid></Grow>}
                         </Grid>
+                        
                     </Collapse>
                 </TableCell>
                 
