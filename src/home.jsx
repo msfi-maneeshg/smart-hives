@@ -115,13 +115,13 @@ export function Home(props) {
             setIsEventDataLoaded(true)
             var connectOptions = {
                 rejectUnauthorized: false,
-                username:'a-62m15c-ubghzixbav',
-                password:'r+@6D*-wMzAw6U&4tA',
-                clientId: 'a:62m15c:test2',
+                username:'a-8l173e-ahdw2reb1r',
+                password:'XKe_utxjf(jf+VHkXV',
+                clientId: 'a:8l173e:test1',
             };
             var mqtt = require('mqtt');
 
-            var client = mqtt.connect('tcp://62m15c.messaging.internetofthings.ibmcloud.com/',connectOptions);  
+            var client = mqtt.connect('tcp://8l173e.messaging.internetofthings.ibmcloud.com/',connectOptions);  
             client.subscribe("iot-2/type/"+farmer+"/id/"+hive+"/evt/HiveEvent/fmt/+");
         
             client.on('message', function (topic, message) {
