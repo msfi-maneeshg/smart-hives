@@ -30,6 +30,9 @@ export function App() {
         <Route exact path="/realtime-insight">
           <Dashboard page="realtime-insight"/>
         </Route>
+        <Route exact path="/my-devices">
+          <Dashboard page="my-devices"/>
+        </Route>
         <Route exact path="/home">
           <Home/>
         </Route>

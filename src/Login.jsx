@@ -79,9 +79,9 @@ export function Login(){
                         setLoginStatus(true)
                         setLoginNotification({severity:"success",msg:"Login successfull!",status:true})
                     }else if(responseStatus === 404){
-                        setLoginNotification({severity:"warning",msg:"Invalid farmer ID!",status:true})
+                        setLoginNotification({severity:"error",msg:"Invalid farmer ID!",status:true})
                     }else{
-                        setLoginNotification({severity:"warning",msg:"Something went wrong!",status:true})
+                        setLoginNotification({severity:"error",msg:"Something went wrong!",status:true})
                     }
                     setLoginButtonStatus(false)
                 });
@@ -103,7 +103,7 @@ export function Login(){
                         <Grid item xs={12} className={classes.outerBox}>
                             <Grid container spacing={3} className={classes.innerBox}>
                                 <Grid item xs={12}>
-                                    {loginNotification.status && <Alert severity={loginNotification.severity}  onClose={() => setLoginNotification({severity:"",msg:"",status:false})}>{loginNotification.msg}</Alert>}
+                                    {loginNotification.status && <Alert variant="filled"  elevation={6} severity={loginNotification.severity}  onClose={() => setLoginNotification({severity:"",msg:"",status:false})}>{loginNotification.msg}</Alert>}
                                 </Grid>
                                 <Grid item xs={12}>
                                     <TextField 

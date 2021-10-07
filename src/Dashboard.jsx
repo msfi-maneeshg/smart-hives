@@ -22,6 +22,7 @@ import {DashboardNavBar} from './DashboardNavBar'
 import {DashboardSidebar} from './DashboardSidebar'
 import {HourlyInsight} from './HourlyInsight'
 import {RealtimeInsight} from './RealtimeInsight'
+import {MyDevices} from './MyDevices'
 
 
 const drawerWidth = 240;
@@ -87,7 +88,7 @@ export function Dashboard(props) {
   return (
     <div className={classes.root}>
       <CssBaseline />
-      <DashboardNavBar open={open} onClick={handleDrawerOpen} />
+      <DashboardNavBar open={open} onClick={handleDrawerOpen} page={props.page} />
       <DashboardSidebar open={open} onClick={handleDrawerClose} />
       <main
         className={clsx(classes.content, {
@@ -98,7 +99,9 @@ export function Dashboard(props) {
         
         {props.page === "hourly-insight" && <HourlyInsight />}
         {props.page === "realtime-insight" && <RealtimeInsight />}
+        {props.page === "my-devices" && <MyDevices />}
 
+        
         
       </main>
     </div>

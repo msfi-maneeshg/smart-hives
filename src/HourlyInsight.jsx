@@ -79,7 +79,10 @@ const useStyles = makeStyles((theme) => ({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-      },
+    },
+    alertMessage:{
+        marginTop: theme.spacing(2)
+    }
 }));
 
 const farmer = "farmer-1"
@@ -408,7 +411,7 @@ export function HourlyInsight(){
                         <Paper className={classes.paper}>
                         <Typography variant="h6" gutterBottom>Alerts</Typography>
                             {notificationData.map((data,index) => (
-                                <Alert key={index} severity="warning"  onClose={(e) => handleCloseNotification(e,data)}>Alert for {data.value.deviceId}, Temperature is : {data.value.temperature}°C and Humidity is : {data.value.humidity}%</Alert>
+                                <Alert className={classes.alertMessage} variant="filled"  elevation={3} key={index} severity="warning"  onClose={(e) => handleCloseNotification(e,data)}>Alert for {data.value.deviceId}, Temperature is : {data.value.temperature}°C and Humidity is : {data.value.humidity}%</Alert>
                                 ))
                             }
                         </Paper>
