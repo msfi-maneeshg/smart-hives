@@ -3,13 +3,8 @@ import { makeStyles } from '@material-ui/core/styles';
 import {Button,AppBar,Toolbar,Typography,CssBaseline,Container,Paper, Grid, FormControl,InputLabel,Select,MenuItem,TableCell,TableRow,TableBody,TableContainer,Table,TableHead,IconButton,Collapse ,TextField,CircularProgress,Grow,LinearProgress} from '@material-ui/core';
 import {ExpandMore,ExpandLess} from '@material-ui/icons'
 import Chart from "react-google-charts";
-import { WiThermometer,WiHumidity, } from "react-icons/wi";
-import { GiWeight } from "react-icons/gi";
 import {Alert} from '@material-ui/lab';
-import Modal from '@material-ui/core/Modal';
-import Backdrop from '@material-ui/core/Backdrop';
-import Fade from '@material-ui/core/Fade';
-import clsx from 'clsx';
+import {useSelector} from 'react-redux'
 
 
 const useStyles = makeStyles((theme) => ({
@@ -85,9 +80,10 @@ const useStyles = makeStyles((theme) => ({
     }
 }));
 
-const farmer = "farmer-1"
 export function RealtimeInsight(){
     const classes = useStyles();
+    const loginStatus = useSelector((state) => state.UserLoginStatus);
+    const farmer =loginStatus.userID
     const [isNotificationStart,setIsNotificationStart] = useState(false) 
     const [notificationData,setNotificationData] = useState(null)
     const [isDevicesLoaded,setIsDeviceLoaded] = useState(false)

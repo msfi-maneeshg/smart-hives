@@ -7,10 +7,14 @@ import {Home} from './home2'
 import {
   BrowserRouter,
   Switch,
-  Route
+  Route,
+  Redirect
 } from "react-router-dom";
+import {useSelector} from 'react-redux'
 
 export function App() {
+  const loginStatus = useSelector((state) => state.UserLoginStatus);
+  console.log(loginStatus.isLoggedin)
   return (
     <>
     <BrowserRouter>
@@ -24,18 +28,28 @@ export function App() {
         <Route exact path="/register">
           <Register/>
         </Route>
-        <Route exact path="/hourly-insight">
-          <Dashboard page="hourly-insight"/>
-        </Route>
-        <Route exact path="/realtime-insight">
-          <Dashboard page="realtime-insight"/>
-        </Route>
-        <Route exact path="/my-devices">
-          <Dashboard page="my-devices"/>
-        </Route>
-        <Route exact path="/home">
-          <Home/>
-        </Route>
+        {loginStatus.isLoggedin && 
+        <>
+          <Route exact path="/hourly-insight">
+            <Dashboard page="hourly-insight"/>
+          </Route>
+          <Route exact path="/realtime-insight">
+            <Dashboard page="realtime-insight"/>
+          </Route>
+          <Route exact path="/my-devices">
+            <Dashboard page="my-devices"/>
+          </Route>
+          <Route exact path="/home">
+            <Dashboard page="hourly-insight"/>
+          </Route>
+          <Redirect from='*' to='/home' />
+
+        </>
+        }
+        {!loginStatus.isLoggedin &&
+        <Redirect from='*' to='/login' />
+        }
+        
       </Switch>
     </BrowserRouter>
     

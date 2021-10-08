@@ -10,9 +10,14 @@ import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import ListItem from '@material-ui/core/ListItem';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
-import {ListItemText, Link, Avatar, Typography} from '@material-ui/core';
+import {ListItemText, Avatar, Typography} from '@material-ui/core';
 import HourglassEmptyIcon from '@material-ui/icons/HourglassEmpty';
 import EqualizerIcon from '@material-ui/icons/Equalizer';
+import ExitToApp from '@material-ui/icons/ExitToApp';
+import { Link } from "react-router-dom";
+import {useDispatch, useSelector} from 'react-redux';
+import {changeLoginStatus} from './Reducers';
+
 
 const drawerWidth = 240;
 
@@ -55,6 +60,9 @@ const useStyles = makeStyles((theme) => ({
 export function DashboardSidebar(props) {
   const classes = useStyles();
   const theme = useTheme();
+  const dispatch = useDispatch();
+  const loginStatus = useSelector((state) => state.UserLoginStatus);
+
 
   return (
     <Drawer
@@ -82,18 +90,18 @@ export function DashboardSidebar(props) {
                     color="textPrimary"
                     variant="h5"
                 >
-                    Farmer-1
+                    {loginStatus.userID}
                 </Typography>
             </div>
             <Divider />
             <List >
-                <Link href="/hourly-insight" className={classes.link}>
+                <Link to="/hourly-insight" className={classes.link}>
                     <ListItem button selected={props.page === 'hourly-insight'}>
                         <ListItemIcon><HourglassEmptyIcon /></ListItemIcon>
                         <ListItemText primary='Hourly Insight' />
                     </ListItem>
                 </Link>
-                <Link href="/realtime-insight" className={classes.link}>
+                <Link to="/realtime-insight" className={classes.link}>
                     <ListItem button selected={props.page === 'realtime-insight'}>
                         <ListItemIcon><EqualizerIcon /></ListItemIcon>
                         <ListItemText primary='Real-Time Insight' />
@@ -102,10 +110,16 @@ export function DashboardSidebar(props) {
             </List>
             <Divider />
             <List>
-                <Link href="/my-devices" className={classes.link}>
+                <Link to="/my-devices" className={classes.link}>
                     <ListItem button selected={props.page === 'my-devices'}>
                     <ListItemIcon><PhonelinkSetupIcon /></ListItemIcon>
                     <ListItemText primary='My Devices' />
+                    </ListItem>
+                </Link>
+                <Link to="#"  onClick={() => dispatch(changeLoginStatus(""))} className={classes.link}>
+                    <ListItem button>
+                    <ListItemIcon><ExitToApp /></ListItemIcon>
+                    <ListItemText primary='Logout' />
                     </ListItem>
                 </Link>
             </List>

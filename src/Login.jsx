@@ -5,6 +5,10 @@ import {
     TextField, Button, Link, FormHelperText,CircularProgress, LinearProgress
 } from '@material-ui/core';
 import {Alert} from '@material-ui/lab';
+import { useHistory } from "react-router-dom";
+import {useDispatch} from 'react-redux';
+import {changeLoginStatus} from './Reducers';
+import {API_URL} from './constant';
 
 const useStyles = makeStyles((theme) => ({
     wallImage: {
@@ -45,6 +49,8 @@ const useStyles = makeStyles((theme) => ({
 
 export function Login(){
     const classes = useStyles();
+    const dispatch = useDispatch();
+    let history = useHistory();
     const [farmerID,setFarmerID] = useState({value:"",error:""})
     const [loginStatus,setLoginStatus] = useState(false);
     const [loginButtonStatus,setLoginButtonStatus] = useState(false)
@@ -74,10 +80,13 @@ export function Login(){
                     return data   ;
                 })
                 .then((data) => {
-                    console.log(data)
                     if(responseStatus === 200){
                         setLoginStatus(true)
                         setLoginNotification({severity:"success",msg:"Login successfull!",status:true})
+                        dispatch(changeLoginStatus(farmerID.value));
+                        
+                        setTimeout(() => {history.push('/home')}, 1000)
+                        
                     }else if(responseStatus === 404){
                         setLoginNotification({severity:"error",msg:"Invalid farmer ID!",status:true})
                     }else{

@@ -11,6 +11,7 @@ import Chart from "react-google-charts";
 import { WiThermometer,WiHumidity, } from "react-icons/wi";
 import { GiWeight } from "react-icons/gi";
 import {Alert} from '@material-ui/lab';
+import {useSelector} from 'react-redux'
 
 
 const useStyles = makeStyles((theme) => ({
@@ -86,9 +87,10 @@ const useStyles = makeStyles((theme) => ({
     }
 }));
 
-const farmer = "farmer-1"
 export function HourlyInsight(){
     const classes = useStyles();
+    const loginStatus = useSelector((state) => state.UserLoginStatus);
+    const farmer =loginStatus.userID
     var currentDate = new Date()
     currentDate.setHours(currentDate.getHours()-1) // get 1 hours back date time default
     let formatTwoDigits = (digit) => ("0" + digit).slice(-2);

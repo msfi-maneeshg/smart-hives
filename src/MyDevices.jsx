@@ -16,7 +16,7 @@ import NotInterestedIcon from '@material-ui/icons/NotInterested';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import AddBoxIcon from '@material-ui/icons/AddBox';
 import {Alert} from '@material-ui/lab';
-
+import {useSelector} from 'react-redux'
 
 const useStyles = makeStyles((theme) => ({
   table: {
@@ -52,9 +52,10 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 
-const farmer = "farmer-1"
 export function MyDevices() {
     const classes = useStyles();
+    const loginStatus = useSelector((state) => state.UserLoginStatus);
+    const farmer =loginStatus.userID
     const [isDevicesLoaded,setIsDeviceLoaded] = useState(false)
     const [deviceList,setDeviceList] = useState({status:false,list:[]})
 
@@ -170,6 +171,8 @@ function LoadingData(){
 
 function AddNewDevice(props){
     const classes = useStyles();
+    const loginStatus = useSelector((state) => state.UserLoginStatus);
+    const farmer =loginStatus.userID
     const [newDeviceID,setNewDeviceID] = useState({value:'',error:''})
     const [addButton,setAddButton] = useState({status:false})
     const [returnMessage, setReturnMessage] = useState({status:false,severity:'',msg:''})

@@ -5,7 +5,8 @@ import {
     Paper, Grid, TextField, Button, Link, LinearProgress 
 } from '@material-ui/core';
 import {Alert} from '@material-ui/lab';
-
+import { useHistory } from "react-router-dom";
+import {API_URL} from './constant'
 const useStyles = makeStyles((theme) => ({
     wallImage: {
         backgroundImage: `url('./honey-wall.png')`,
@@ -42,6 +43,7 @@ const useStyles = makeStyles((theme) => ({
 
 export function Register(){
     const classes = useStyles();
+    let history = useHistory();
     const [farmerID,setFarmerID] = useState({value:"",error:""})
     const [registerStatus,setRegisterStatus] = useState(false);
     const [registerButtonStatus,setRegisterButtonStatus] = useState(false)
@@ -75,6 +77,7 @@ export function Register(){
                     if(responseStatus === 200){
                         setRegisterStatus(true)
                         setRegisterNotification({severity:"success",msg:"Register successfull!",status:true})
+                        setInterval(() => {history.push('/login')}, 1000)
                     }else{
                         setRegisterNotification({severity:"warning",msg:data.msg,status:true})
                     }
