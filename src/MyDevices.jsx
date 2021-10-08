@@ -9,7 +9,7 @@ import TableRow from '@material-ui/core/TableRow';
 import {
     Paper, Modal, Fade, Backdrop, ButtonGroup, Button,
     Accordion, AccordionSummary, AccordionDetails, Typography,
-    Grid, TextField, LinearProgress, FormHelperText, CircularProgress 
+    Grid, TextField, LinearProgress, FormHelperText 
 } from '@material-ui/core';
 import DeleteIcon from '@material-ui/icons/Delete';
 import NotInterestedIcon from '@material-ui/icons/NotInterested';

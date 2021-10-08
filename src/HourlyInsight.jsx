@@ -1,23 +1,24 @@
 import { React,useEffect, useState } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
-import {Button,AppBar,Toolbar,Typography,CssBaseline,Container,Paper, Grid, FormControl,InputLabel,Select,MenuItem,TableCell,TableRow,TableBody,TableContainer,Table,TableHead,IconButton,Collapse ,TextField,CircularProgress,Grow} from '@material-ui/core';
+import {
+    Typography,Container,Paper, Grid, FormControl,
+    InputLabel,Select,MenuItem,TableCell,TableRow,
+    TableBody,TableContainer,Table,TableHead,IconButton,
+    Collapse ,TextField,CircularProgress,Grow
+} from '@material-ui/core';
 import {ExpandMore,ExpandLess} from '@material-ui/icons'
 import Chart from "react-google-charts";
 import { WiThermometer,WiHumidity, } from "react-icons/wi";
 import { GiWeight } from "react-icons/gi";
 import {Alert} from '@material-ui/lab';
-import Modal from '@material-ui/core/Modal';
-import Backdrop from '@material-ui/core/Backdrop';
-import Fade from '@material-ui/core/Fade';
-import clsx from 'clsx';
 
 
 const useStyles = makeStyles((theme) => ({
     root: {
-      flexGrow: 1,
-      '& > *': {
-        borderBottom: 'unset',
-    },
+        flexGrow: 1,
+        '& > *': {
+            borderBottom: 'unset',
+        },
     },
     paper: {
       padding: theme.spacing(2),
@@ -88,8 +89,6 @@ const useStyles = makeStyles((theme) => ({
 const farmer = "farmer-1"
 export function HourlyInsight(){
     const classes = useStyles();
-    const [openAddFarmer, setOpenAddFarmer] = useState(false);
-    const [openAddHive, setOpenAddHive] = useState(false);
     var currentDate = new Date()
     currentDate.setHours(currentDate.getHours()-1) // get 1 hours back date time default
     let formatTwoDigits = (digit) => ("0" + digit).slice(-2);
@@ -100,17 +99,8 @@ export function HourlyInsight(){
     const [hiveAggregatedData,setHiveAggregatedData] = useState({list:[]})
     const [isNotificationStart,setIsNotificationStart] = useState(false) 
     const [notificationData,setNotificationData] = useState(null)
-    const [newFarmerName,setNewFarmerName] = useState("")
-    const [newHiveName,setNewHiveName] = useState("")
     const [period, setPeriod] = useState(formatTwoDigits(currentDate.getUTCHours())+"-"+formatTwoDigits(currentDate.getUTCHours()+1));
-    const [closeNotificationFarmer,setCloseNotificationFarmer] = useState(false) 
-    const [closeNotificationHive,setCloseNotificationHive] = useState(false) 
-    const [notificationHive,setNotificationHive] = useState({severity:"",msg:""}) 
-    const [notificationFarmer,setNotificationFarmer] = useState({severity:"",msg:""}) 
-
-    const [addFarmerButton,setAddFarmerButton] = useState(false)
-    const [addHiveButton,setAddHiveButton] = useState(false)
-
+    
     useEffect(() => {
         if(!isDataLoaded && farmer){
             setIsDataLoaded(true)
@@ -177,16 +167,6 @@ export function HourlyInsight(){
         setHiveAggregatedData({list:[]})
     }
 
-    const handleAddFarmerModal = () => {
-        setNewFarmerName("")
-        setOpenAddFarmer(!openAddFarmer);
-    };
-    
-    const handleAddHiveModal = () => {
-        setNewHiveName("")
-        setOpenAddHive(!openAddHive);
-    };
-
     const handleChangePeriod = (e) => {
         setPeriod(e.target.value)
         setIsDataLoaded(false)
@@ -222,69 +202,6 @@ export function HourlyInsight(){
         });
     }
 
-    const AddNewFarmer = () => {
-        
-        if(newFarmerName){
-            setAddFarmerButton(true)
-            let responseStatus;
-            let apiEndPoint = 'http://localhost:8000/iot/create-device-type/'+newFarmerName;
-            
-            const requestOptions = {
-                method: "POST",    
-            };
-            fetch(apiEndPoint, requestOptions)
-                .then((response) => {
-                    const data = response.json();
-                    responseStatus = response.status;
-                    return data   ;
-                })
-                .then((data) => {
-                    if(responseStatus === 200){
-                        setNotificationFarmer({severity:"success",msg:data.msg})
-                        setOpenAddFarmer(false)
-                    }else if (responseStatus === 400){
-                        setNotificationFarmer({severity:"warning",msg:data.msg})
-                    }else{
-                        setNotificationFarmer({severity:"warning",msg:"Something went wrong!"})
-                    }
-                    setCloseNotificationFarmer(true)
-                    setAddFarmerButton(false)
-                });
-        }
-    }
-
-    const AddNewHive = () => {
-        
-        if(newHiveName && farmer){
-            setAddHiveButton(true)
-            let responseStatus;
-            let apiEndPoint = 'http://localhost:8000/iot/create-device/'+farmer+'/'+newHiveName;
-            
-            const requestOptions = {
-                method: "POST",    
-            };
-            fetch(apiEndPoint, requestOptions)
-                .then((response) => {
-                    const data = response.json();
-                    responseStatus = response.status;
-                    return data   ;
-                })
-                .then((data) => {
-                    if(responseStatus === 200){
-                        setNotificationHive({severity:"success",msg:data.msg})
-                        setOpenAddHive(false)
-                    }else if (responseStatus === 400){
-                        setNotificationHive({severity:"warning",msg:data.msg})
-                    }else{
-                        setNotificationHive({severity:"warning",msg:"Something went wrong!"})
-                    }
-                    
-                    setCloseNotificationHive(true)
-                    setAddHiveButton(false)
-                });
-        }
-    }
-
     const rowHiveData = hiveAggregatedData.list.map((hiveData,index) => (
         <Rows key={index} {...hiveData} farmer={farmer} />
     ))
@@ -298,18 +215,9 @@ export function HourlyInsight(){
         PeriodList.push(periodString)
     }
     return(
-        <>
         <Container className={classes.mainContainer}>
             <div className={classes.root}>
                 <Grid container spacing={3}>
-                    <Grid item xs={12}>
-                        {closeNotificationFarmer && notificationFarmer.severity === "success" &&
-                        <Alert severity={notificationFarmer.severity}  onClose={() => setCloseNotificationFarmer(false)}>{notificationFarmer.msg}</Alert>       
-                        }
-                        {closeNotificationHive &&  notificationHive.severity === "success" &&
-                        <Alert severity={notificationHive.severity}  onClose={() => setCloseNotificationHive(false)}>{notificationHive.msg}</Alert>       
-                        }
-                    </Grid>
                     <Grid item xs={12}>
                         <Paper className={classes.paper}>
                             <TextField
@@ -340,71 +248,7 @@ export function HourlyInsight(){
                                 
                                 </Select>
                             </FormControl>
-                            <Button style={{float:'right'}} className={classes.formControl} variant="outlined" color="primary" onClick={() =>handleAddFarmerModal()}>Add New Farmer</Button>    
-                            <Button style={{float:'right'}} className={classes.formControl} variant="outlined" color="primary" onClick={() =>handleAddHiveModal()} disabled={farmer?false:true}>Add Hive</Button>    
                         </Paper>
-                        <Modal
-                            aria-labelledby="transition-modal-title"
-                            aria-describedby="transition-modal-description"
-                            className={classes.modal}
-                            open={openAddFarmer}
-                            onClose={handleAddFarmerModal}
-                            closeAfterTransition
-                            BackdropComponent={Backdrop}
-                            BackdropProps={{
-                            timeout: 500,
-                            }}
-                        >
-                            <Fade in={openAddFarmer}>
-                            <Paper className={classes.paper}>
-                                <h2 id="transition-modal-title">Add New Farmer</h2>
-                                <Grid container spacing={3}>
-                                <Grid item xs={12}>
-                                        {closeNotificationFarmer && notificationFarmer.severity !== "success" &&
-                                        <Alert severity={notificationFarmer.severity}  onClose={() => setCloseNotificationFarmer(false)}>{notificationFarmer.msg}</Alert>       
-                                        }
-                                    </Grid>
-                                    <Grid item xs={12}>
-                                        <TextField id="outlined-basic" label="FarmerID" variant="outlined" value={newFarmerName} onChange={(e) => setNewFarmerName(e.target.value)} />
-                                    </Grid>
-                                    <Grid item xs={12}>
-                                        <Button variant="outlined" color="primary" onClick={() => AddNewFarmer()} disabled={newFarmerName?false:true}>{addFarmerButton?<><CircularProgress />{"Creating"}</>:"Create"}</Button>    
-                                    </Grid>
-                                </Grid>
-                            </Paper>
-                            </Fade>
-                        </Modal>
-                        <Modal
-                            aria-labelledby="transition-modal-title"
-                            aria-describedby="transition-modal-description"
-                            className={classes.modal}
-                            open={openAddHive}
-                            onClose={handleAddHiveModal}
-                            closeAfterTransition
-                            BackdropComponent={Backdrop}
-                            BackdropProps={{
-                            timeout: 500,
-                            }}
-                        >
-                            <Fade in={openAddHive}>
-                            <Paper className={classes.paper}>
-                                <h2 id="transition-modal-title">Add New Hive</h2>
-                                <Grid container spacing={3}>
-                                    <Grid item xs={12}>
-                                        {closeNotificationHive &&  notificationHive.severity !== "success" &&
-                                        <Alert severity={notificationHive.severity}  onClose={() => setCloseNotificationHive(false)}>{notificationHive.msg}</Alert>       
-                                        }
-                                    </Grid>
-                                    <Grid item xs={12}>
-                                        <TextField id="outlined-basic" label="HiveID" variant="outlined" value={newHiveName} onChange={(e) => setNewHiveName(e.target.value)} />
-                                    </Grid>
-                                    <Grid item xs={12}>
-                                        <Button variant="outlined" color="primary" onClick={() => AddNewHive()} disabled={newHiveName?false:true}>{addHiveButton?<><CircularProgress />{"Creating"}</>:"Create"}</Button>    
-                                    </Grid>
-                                </Grid>
-                            </Paper>
-                            </Fade>
-                        </Modal>
                     </Grid>
                     { notificationData !== null &&  notificationData.length !== 0 &&
                         <Grid item xs={12}>
@@ -446,25 +290,8 @@ export function HourlyInsight(){
                 </Grid>
             </div>
         </Container>
-    </>
     );
 } 
-
-function currentQuarterOfDay(){
-    var currentDate = new Date()
-    currentDate.setUTCHours(currentDate.getUTCHours() - 6) // last processed data to show
-    var quarterOfDay;
-    if(currentDate.getUTCHours() < 6){
-        quarterOfDay = 'Q1'
-    }else if(currentDate.getUTCHours() < 12){
-        quarterOfDay = 'Q2'
-    }else if(currentDate.getUTCHours() < 18){
-        quarterOfDay = 'Q3'
-    }else if(currentDate.getUTCHours() < 24){
-        quarterOfDay = 'Q4'
-    }
-    return quarterOfDay
-}
 
 function Rows(props){
     const [open, setOpen] = useState(false);
@@ -537,8 +364,7 @@ function Rows(props){
                             </Grow>
                             {chartData.list.length > 1 && 
                                 <Grow in={open} {...(open ? { timeout: 2500 } : {})}>
-                                    <Grid item xs={12} className={classes.dataBox}>
-                                    <h3>Insight data</h3>
+                                    <Grid item xs={10} className={classes.dataBox}>
                                     <Chart
                                         height={'500px'}
                                         chartType="LineChart"
@@ -573,9 +399,6 @@ function Rows(props){
                                     </Grid>
                                 </Grow>
                             }
-                            <Grow in={open} {...(open ? { timeout: 2500 } : {})}>
-                                <RealTimeRecord farmer={props.farmer} hive={props.deviceID}/>
-                            </Grow>
                         </Grid>
                         
                     </Collapse>
@@ -608,74 +431,3 @@ function RowDataLoading(){
     );
 }
 
-function RealTimeRecord(props){
-    const classes = useStyles();
-    const [isEventDataLoaded,setIsEventDataLoaded] = useState(false)
-    const [weightArray,setWeightArray] = useState({data:[['x','Temperature','Humidity', 'Weight']]})
-    useEffect(() => {
-        if(!isEventDataLoaded && props.farmer && props.hive){
-            setIsEventDataLoaded(true)
-            var connectOptions = {
-                rejectUnauthorized: false,
-                username:'a-8l173e-ahdw2reb1r',
-                password:'XKe_utxjf(jf+VHkXV',
-                clientId: 'a:8l173e:test1',
-            };
-            var mqtt = require('mqtt');
-
-            var client = mqtt.connect('tcp://8l173e.messaging.internetofthings.ibmcloud.com/',connectOptions);  
-            client.subscribe("iot-2/type/"+props.farmer+"/id/"+props.hive+"/evt/HiveEvent/fmt/+");
-        
-            client.on('message', function (topic, message) {
-                // message is Buffer
-                var data = JSON.parse(message.toString())
-                
-                let tempWeight = weightArray.data
-                let NewtempWeight;
-                if(tempWeight.length > 50 ){
-                    // NewtempWeight = tempWeight.filter(function(element,index) {
-                    //     return index !== 1
-                    // });
-                    tempWeight.splice(1, 1);
-                    NewtempWeight = tempWeight
-                }else{
-                    NewtempWeight = tempWeight
-                }
-                let oldTimestamp = new Date(NewtempWeight[NewtempWeight.length-1][0])
-                let newTimestamp= new Date()
-                
-                if(newTimestamp.getTime() !== oldTimestamp.getTime()){
-                    NewtempWeight.push([newTimestamp,data.temperature,data.humidity,data.weight])
-                    setWeightArray({data:NewtempWeight})
-                }
-            });
-        }
-    });
-
-    return(
-        <Grid item xs={12} className={classes.dataBox}>
-            <Paper className={clsx(classes.paper)}>
-                <h3>Real Time data</h3>
-                {weightArray.data && weightArray.data.length > 1 ?
-                <Chart
-                    height={'500px'}
-                    chartType="LineChart"
-                    loader={<div>Loading Chart</div>}
-                    data={weightArray.data}
-                    options={{
-                        hAxis: {
-                        title: 'Time',
-                        },
-                        vAxis: {
-                        title: 'Temperature / Humidity / Weigth',
-                        },
-                    }}
-                    rootProps={{ 'data-testid': '1' }}
-                />:
-                <CircularProgress />       
-                }
-            </Paper>
-        </Grid>
-
-    )
-}
