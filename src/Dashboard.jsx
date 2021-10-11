@@ -31,7 +31,12 @@ const useStyles = makeStyles((theme) => ({
   root: {
     display: 'flex',
   },
- 
+  bgImage :{
+    backgroundImage: "url('https://wallpaperaccess.com/full/1585697.jpg')",
+    minHeight: '100vh',
+    backgroundAttachment: 'fixed',
+    backgroundRepeat: 'no-repeat',
+  },
   menuButton: {
     marginRight: theme.spacing(2),
   },
@@ -86,6 +91,8 @@ export function Dashboard(props) {
   };
 
   return (
+    <>
+    <div className={classes.bgImage}>
     <div className={classes.root}>
       <CssBaseline />
       <DashboardNavBar open={open} onClick={handleDrawerOpen} page={props.page} />
@@ -105,6 +112,8 @@ export function Dashboard(props) {
         
       </main>
     </div>
+    </div>
+    </>
   );
 }
 
