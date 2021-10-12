@@ -9,14 +9,15 @@ import TableRow from '@material-ui/core/TableRow';
 import {
     Paper, Modal, Fade, Backdrop, ButtonGroup, Button,
     Accordion, AccordionSummary, AccordionDetails, Typography,
-    Grid, TextField, LinearProgress, FormHelperText ,Stepper, Step, StepLabel
+    Grid, TextField, LinearProgress, FormHelperText ,Stepper,
+    Step, StepLabel, IconButton, Collapse, Divider
 } from '@material-ui/core';
 import DeleteIcon from '@material-ui/icons/Delete';
 import NotInterestedIcon from '@material-ui/icons/NotInterested';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
-import AddBoxIcon from '@material-ui/icons/AddBox';
 import {Alert} from '@material-ui/lab';
 import {useSelector} from 'react-redux'
+import {ExpandMore,ExpandLess} from '@material-ui/icons'
 
 const useStyles = makeStyles((theme) => ({
   table: {
@@ -48,6 +49,14 @@ const useStyles = makeStyles((theme) => ({
   },
     filedError:{
         color:'red'
+    },
+    bottomButton:{
+        float:'right',
+        marginRight:'5px'
+    },
+    editDeviceInfoBox:{
+        margin: theme.spacing(2,1,3,1),
+        width:'100%'
     }
 }));
 
@@ -111,7 +120,7 @@ export function MyDevices() {
                 </TableHead>
                 <TableBody>
                     {deviceList.status && deviceList.list.length > 0 && deviceList.list.map((row) => (
-                        <DeviceTableRow key={row.deviceId} returnMessage={returnMessage} setReturnMessage={setReturnMessage} farmer={farmer} deviceId={row.deviceId} onClick={() => setIsDeviceLoaded(false)} />
+                        <DeviceTableRow key={row.deviceId} returnMessage={returnMessage} setReturnMessage={setReturnMessage} farmer={farmer} deviceId={row.deviceId} deviceInfo={row} onClick={() => setIsDeviceLoaded(false)} />
                     ))}
                     {deviceList.status && deviceList.list.length === 0  && <NoRecordFound/>}
                     {!deviceList.status && deviceList.list.length === 0 && <LoadingData />}
@@ -125,6 +134,7 @@ export function MyDevices() {
 function DeviceTableRow(props){
     const classes = useStyles();
     const [open, setOpen] = useState(false);
+    const [openCollapse, setOpenCollapse] = useState(false);
     const [addButton,setAddButton] = useState({status:false,enable:false})
     const [returnMessage, setReturnMessage] = useState({status:false,severity:'',msg:''})
 
@@ -132,7 +142,7 @@ function DeviceTableRow(props){
         if(props.deviceId){
             setAddButton({status:true,enable:true})
             let responseStatus;
-            let apiEndPoint = 'http://localhost:8000/iot/device-info/'+props.farmer+"/"+props.deviceId;
+            let apiEndPoint = 'http://localhost:8000/iot/device/types/'+props.farmer+"/devices/"+props.deviceId;
             
             const requestOptions = {
                 method: "DELETE"
@@ -164,11 +174,24 @@ function DeviceTableRow(props){
     return(
         <>
             <TableRow >
-                <TableCell component="th" scope="row">
+                <TableCell component="th" scope="row" onClick={() => setOpenCollapse(!openCollapse)}>
                 {props.deviceId}
                 </TableCell>
-                <TableCell align="right" ><DeleteIcon className={classes.deleteButton} onClick={() => setOpen(true)} /></TableCell>
+                <TableCell align="right" onClick={() => setOpenCollapse(!openCollapse)} >
+                <IconButton aria-label="expand row" size="small" >
+                        {openCollapse ? <ExpandLess /> : <ExpandMore />}
+                    </IconButton>
+                {/* <DeleteIcon className={classes.deleteButton} onClick={() => setOpen(true)} /> */}
+                </TableCell>
             </TableRow>
+            <TableRow >
+                <TableCell  style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={5}>
+                    <Collapse in={openCollapse} timeout="auto" unmountOnExit>
+                        <EditDeviceInformation deviceInfo={props.deviceInfo} />
+                    </Collapse>
+                </TableCell>
+            </TableRow>    
+
             <Modal
                 aria-labelledby="transition-modal-title"
                 aria-describedby="transition-modal-description"
@@ -514,6 +537,241 @@ function AddNewDevice(props){
             
             </AccordionDetails>
         </Accordion>
+    );
+}
+
+function EditDeviceInformation(props){
+    const classes = useStyles();
+    const loginStatus = useSelector((state) => state.UserLoginStatus);
+    const farmer =loginStatus.userID
+    const [addButton,setAddButton] = useState({status:false,enable:true})
+    const [returnMessage, setReturnMessage] = useState({status:false,severity:'',msg:''})
+    const [deviceAddStep,setDeviceAddStep] = useState(0)
+    const [isEditable,setIsEditable] = useState(false)
+    const devicePropsReset = {
+        serialNumber:props.deviceInfo.deviceInfo.serialNumber,
+        manufacturer:props.deviceInfo.deviceInfo.manufacturer,
+        model:props.deviceInfo.deviceInfo.model,
+        deviceClass:props.deviceInfo.deviceInfo.deviceClass,
+        description:props.deviceInfo.deviceInfo.description,
+        firmwareVersion:props.deviceInfo.deviceInfo.firmwareVersion,
+        hardwareVersion:props.deviceInfo.deviceInfo.hardwareVersion,
+        descriptiveLocation:props.deviceInfo.deviceInfo.descriptiveLocation
+    }
+    const deviceMetadata = {
+        minimumTemperature:Number(props.deviceInfo.metadata.minimumTemperature),
+        maximumTemperature:Number(props.deviceInfo.metadata.maximumTemperature),
+        minimumHumidity:Number(props.deviceInfo.metadata.minimumHumidity),
+        maximumHumidity:Number(props.deviceInfo.metadata.maximumHumidity),
+        minimumWeight:Number(props.deviceInfo.metadata.minimumWeight),
+        maximumWeight:Number(props.deviceInfo.metadata.maximumWeight)
+    }
+    const [newDeviceProps,setNewDeviceProps] = useState({...devicePropsReset})
+    const [newDeviceMetadata,setNewDeviceMetadata] = useState({...deviceMetadata})
+
+    const SaveDeviceInfo = () => {
+        if( farmer){
+            setAddButton({status:true,enable:false})
+            let responseStatus;
+            let apiEndPoint = 'http://localhost:8000/iot/device/types/'+farmer+"/devices/"+props.deviceInfo.deviceId;
+            
+            const requestOptions = {
+                method: "PUT",   
+                body: JSON.stringify({ 
+                    deviceInfo:newDeviceProps,
+                    metadata:newDeviceMetadata
+                }) 
+            };
+            fetch(apiEndPoint, requestOptions)
+                .then((response) => {
+                    const data = response.json();
+                    responseStatus = response.status;
+                    return data   ;
+                })
+                .then((data) => {
+                    if(responseStatus === 200){
+                        setReturnMessage({status:true,severity:"success",msg:data.content})
+                        setDeviceAddStep(0)
+                        setIsEditable(false)
+                    }else if (responseStatus === 400){
+                        setReturnMessage({status:true,severity:"warning",msg:data.error})
+                    }else{
+                        setReturnMessage({status:true,severity:"warning",msg:"Something went wrong!"})
+                    }
+                    setAddButton({status:false,enable:true})
+                });
+        }
+    }
+
+    const handleInformationInputBox = (e) => {
+        let propsValue = newDeviceProps
+        switch(e.target.id){
+            case "serialNumber":
+                propsValue.serialNumber =  e.target.value;
+                break;
+            case "description":
+                propsValue.description =  e.target.value;
+                break;
+            case "descriptiveLocation":
+                propsValue.descriptiveLocation =  e.target.value;
+                break;
+            case "deviceClass":
+                propsValue.deviceClass =  e.target.value;
+                break;
+            case "firmwareVersion":
+                propsValue.firmwareVersion =  e.target.value;
+                break;
+            case "hardwareVersion":
+                propsValue.hardwareVersion =  e.target.value;
+                break;
+            case "manufacturer":
+                propsValue.manufacturer =  e.target.value;   
+                break;     
+            case "model":
+                propsValue.model =  e.target.value;    
+                break;     
+        }
+        setNewDeviceProps({...propsValue})
+    }
+
+    const handleMetadataInputBox = (e) => {
+        if(addButton.status){
+            return
+        }
+        setReturnMessage({severity:"",msg:"",status:false})
+        
+        let metadate = newDeviceMetadata
+        switch(e.target.id){
+            case "minimumTemperature":
+                if(e.target.value < metadate.maximumTemperature && e.target.value >= 0 && e.target.value < 100){
+                    metadate.minimumTemperature =  Number(e.target.value);
+                }
+                break;
+            case "maximumTemperature":
+                if(e.target.value > metadate.minimumTemperature && e.target.value >= 1 && e.target.value <= 100){
+                    metadate.maximumTemperature =  Number(e.target.value);
+                }    
+                break;
+            case "minimumHumidity":
+                if(e.target.value < metadate.maximumHumidity && e.target.value >= 0 && e.target.value < 100){
+                    metadate.minimumHumidity =  Number(e.target.value);
+                }   
+                break;
+            case "maximumHumidity":
+                if(e.target.value > metadate.minimumHumidity && e.target.value >= 1 && e.target.value <= 100){
+                    metadate.maximumHumidity =  Number(e.target.value);
+                }      
+                break;
+            case "minimumWeight":
+                if(e.target.value < metadate.maximumWeight && e.target.value >= 0){
+                    metadate.minimumWeight =  Number(e.target.value);
+                } 
+                break;
+            case "maximumWeight":
+                if(e.target.value > metadate.minimumWeight && e.target.value >= 1 ){
+                    metadate.maximumWeight =  Number(e.target.value);
+                }     
+                break;    
+
+        }
+        setNewDeviceMetadata(metadate)
+    }
+
+    return(
+        <Grid container spacing={3} className={classes.editDeviceInfoBox}>
+            {returnMessage.status && <Grid item xs={12}>
+                <Alert variant="filled"  elevation={6} severity={returnMessage.severity}  onClose={() => setReturnMessage({severity:"",msg:"",status:false})}>{returnMessage.msg}</Alert>
+            </Grid>}
+            <Grid item xs={12}>
+                {isEditable ?
+                <Stepper activeStep={deviceAddStep} alternativeLabel>
+                    <Step>
+                        <StepLabel>Update Device Information</StepLabel>
+                    </Step>
+                    <Step>
+                        <StepLabel>Update Notification Parameters</StepLabel>
+                    </Step>
+                </Stepper>
+                :
+                <>
+                    {deviceAddStep===0 && <Typography style={{textAlign:'center'}}>Device Information</Typography>}
+                    {deviceAddStep===1 && <Typography style={{textAlign:'center'}}>Notification Parameters</Typography>}
+                    <Divider light />
+                </>    
+                }   
+            </Grid>
+            {deviceAddStep === 0 &&
+                <>
+                    <Grid item xs={6}>
+                        <TextField className={classes.inputBox} id="serialNumber" label="Serial Number" variant="outlined" value={newDeviceProps.serialNumber} onChange={(e) => handleInformationInputBox(e)} disabled={!isEditable} />
+                    </Grid>
+                    <Grid item xs={6}>
+                        <TextField className={classes.inputBox} id="manufacturer" label="Manufacturer" variant="outlined" value={newDeviceProps.manufacturer} onChange={(e) => handleInformationInputBox(e)} disabled={!isEditable}/>
+                    </Grid>
+
+                    <Grid item xs={6}>
+                        <TextField className={classes.inputBox} id="model" label="Model" variant="outlined" value={newDeviceProps.model} onChange={(e) => handleInformationInputBox(e)} disabled={!isEditable}/>
+                    </Grid>
+                    <Grid item xs={6}>
+                        <TextField className={classes.inputBox} id="deviceClass" label="Device Class" variant="outlined" value={newDeviceProps.deviceClass} onChange={(e) => handleInformationInputBox(e)} disabled={!isEditable}/>
+                    </Grid>
+                    
+                    <Grid item xs={6}>
+                        <TextField className={classes.inputBox} id="description" label="Description" variant="outlined" value={newDeviceProps.description} onChange={(e) => handleInformationInputBox(e)} disabled={!isEditable}/>
+                    </Grid>
+                    <Grid item xs={6}>
+                        <TextField className={classes.inputBox} id="firmwareVersion" label="Firmware Version" variant="outlined" value={newDeviceProps.firmwareVersion} onChange={(e) => handleInformationInputBox(e)} disabled={!isEditable}/>
+                    </Grid>
+
+                    <Grid item xs={6}>
+                        <TextField className={classes.inputBox} id="hardwareVersion" label="Hardware Version" variant="outlined" value={newDeviceProps.hardwareVersion} onChange={(e) => handleInformationInputBox(e)} disabled={!isEditable}/>
+                    </Grid>
+                    <Grid item xs={6}>
+                        <TextField className={classes.inputBox} id="descriptiveLocation" label="Descriptive Location" variant="outlined" value={newDeviceProps.descriptiveLocation} onChange={(e) => handleInformationInputBox(e)} disabled={!isEditable}/>
+                    </Grid>
+
+                    <Grid item xs={12}>
+                        <Button  color="primary" className={classes.bottomButton} variant="contained" onClick={() => setDeviceAddStep(deviceAddStep+1)} disabled={!addButton.enable}>Next</Button>
+                        {!isEditable && <Button className={classes.bottomButton} color="primary" variant="contained" onClick={() => setIsEditable(!isEditable)}>Edit</Button>}
+                        {isEditable && <Button className={classes.bottomButton} color="primary" variant="contained" onClick={() => setIsEditable(!isEditable)}>Cancel</Button>}
+                    </Grid>
+                </>
+            }
+            {deviceAddStep === 1 &&
+                <>
+                    <Grid item xs={6}>
+                        <TextField type="number" className={classes.inputBox} id="minimumTemperature" label="Minimum Temperature(°C)" variant="outlined" value={newDeviceMetadata.minimumTemperature} onChange={(e) => handleMetadataInputBox(e)} disabled={!isEditable} />
+                    </Grid>
+                    <Grid item xs={6}>
+                        <TextField type="number" className={classes.inputBox} id="maximumTemperature" label="Maximum Temperature(°C)" variant="outlined" value={newDeviceMetadata.maximumTemperature} onChange={(e) => handleMetadataInputBox(e)} disabled={!isEditable}/>
+                    </Grid>
+
+                    <Grid item xs={6}>
+                        <TextField type="number" className={classes.inputBox} id="minimumHumidity" label="Minimum Humidity(%)" variant="outlined" value={newDeviceMetadata.minimumHumidity} onChange={(e) => handleMetadataInputBox(e)} disabled={!isEditable}/>
+                    </Grid>
+                    <Grid item xs={6}>
+                        <TextField type="number" className={classes.inputBox} id="maximumHumidity" label="Maximum Humidity(%)" variant="outlined" value={newDeviceMetadata.maximumHumidity} onChange={(e) => handleMetadataInputBox(e)} disabled={!isEditable}/>
+                    </Grid>
+
+                    <Grid item xs={6}>
+                        <TextField type="number" className={classes.inputBox} id="minimumWeight" label="Minimum Weight(Kg)" variant="outlined" value={newDeviceMetadata.minimumWeight} onChange={(e) => handleMetadataInputBox(e)} disabled={!isEditable}/>
+                    </Grid>
+                    <Grid item xs={6}>
+                        <TextField type="number" className={classes.inputBox} id="maximumWeight" label="Maximum Weight(Kg)" variant="outlined" value={newDeviceMetadata.maximumWeight} onChange={(e) => handleMetadataInputBox(e)} disabled={!isEditable}/>
+                    </Grid>
+                    
+
+                    <Grid item xs={12}>
+                        <Button style={{float:'left'}} color="primary" variant="outlined" onClick={() => setDeviceAddStep(deviceAddStep-1)}disabled={!addButton.enable}>Back</Button>
+                        {isEditable && <Button className={classes.bottomButton} color="primary" variant="contained" disabled={!addButton.enable} onClick={() => SaveDeviceInfo()}>{addButton.status?<><i className="fa fa-spinner fa-spin"></i> Saving...</>:<>Save</>}</Button>}
+                        {!isEditable && <Button className={classes.bottomButton} color="primary" variant="contained" onClick={() => setIsEditable(!isEditable)}>Edit</Button>}
+                        {isEditable && <Button className={classes.bottomButton} color="primary" variant="contained" onClick={() => setIsEditable(!isEditable)}>Cancel</Button>}
+                    </Grid>
+                </>
+            }
+
+            
+        </Grid>    
     );
 }
 
