@@ -173,16 +173,16 @@ function DeviceTableRow(props){
 
     return(
         <>
-            <TableRow >
-                <TableCell component="th" scope="row" onClick={() => setOpenCollapse(!openCollapse)}>
+            <TableRow>
+                <TableCell component="th" scope="row" >
                 {props.deviceId}
                 </TableCell>
-                <TableCell align="right" onClick={() => setOpenCollapse(!openCollapse)} >
-                <IconButton aria-label="expand row" size="small" >
-                        {openCollapse ? <ExpandLess /> : <ExpandMore />}
-                    </IconButton>
+                <TableCell align="right" >
+                    {openCollapse ? <ExpandLess  onClick={() => setOpenCollapse(!openCollapse)}/> : <ExpandMore onClick={() => setOpenCollapse(!openCollapse)} />}
+                    <DeleteIcon className={classes.deleteButton} onClick={() => setOpen(true)} />
                 {/* <DeleteIcon className={classes.deleteButton} onClick={() => setOpen(true)} /> */}
                 </TableCell>
+                
             </TableRow>
             <TableRow >
                 <TableCell  style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={5}>
