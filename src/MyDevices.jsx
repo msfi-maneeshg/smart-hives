@@ -80,7 +80,7 @@ export function MyDevices() {
                 }
             };
             
-            let apiUrl = "http://localhost:8000/iot/device-list/"+farmer
+            let apiUrl = "http://localhost:8000/iot/device/types/"+farmer+"/devices"
         
             fetch(apiUrl, requestOptions)
             .then((response) => {
@@ -259,7 +259,7 @@ function AddNewDevice(props){
         if(newDeviceID.value && farmer){
             setAddButton({status:true,enable:false})
             let responseStatus;
-            let apiEndPoint = 'http://localhost:8000/iot/create-device/'+farmer;
+            let apiEndPoint = 'http://localhost:8000/iot/device/types/'+farmer+"/devices";
             
             const requestOptions = {
                 method: "POST",   
@@ -300,7 +300,7 @@ function AddNewDevice(props){
         if(newDeviceID.value && farmer){
             setAddButton({status:true,enable:false})
             let responseStatus;
-            let apiEndPoint = 'http://localhost:8000/iot/device-info/'+farmer+'/'+newDeviceID.value;
+            let apiEndPoint = 'http://localhost:8000/iot/device/types/'+farmer+'/devices/'+newDeviceID.value;
             
             const requestOptions = {
                 method: "GET",    

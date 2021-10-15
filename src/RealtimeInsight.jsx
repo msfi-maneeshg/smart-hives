@@ -100,7 +100,7 @@ export function RealtimeInsight(){
                 }
             };
             
-            let apiUrl = "http://localhost:8000/iot/device-list/"+farmer
+            let apiUrl = "http://localhost:8000/iot/device/types/"+farmer+"/devices"
         
             fetch(apiUrl, requestOptions)
             .then((response) => {

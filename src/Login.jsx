@@ -2,15 +2,22 @@ import {useState} from 'react'
 import { makeStyles } from '@material-ui/core/styles';
 import {
     CssBaseline, Typography, Container, Paper, Grid,
-    TextField, Button, Link, FormHelperText,CircularProgress, LinearProgress
+    TextField, Button, FormHelperText, LinearProgress
 } from '@material-ui/core';
 import {Alert} from '@material-ui/lab';
 import { useHistory } from "react-router-dom";
 import {useDispatch} from 'react-redux';
 import {changeLoginStatus} from './Reducers';
 import {API_URL} from './constant';
+import { Link } from "react-router-dom";
 
 const useStyles = makeStyles((theme) => ({
+    bgImage :{
+        backgroundImage: "url('https://wallpaperaccess.com/full/1585697.jpg')",
+        minHeight: '100vh',
+        backgroundAttachment: 'fixed',
+        backgroundRepeat: 'no-repeat',
+      },
     wallImage: {
         backgroundImage: `url('./honey-wall.png')`,
         backgroundSize: 'contain',
@@ -18,7 +25,10 @@ const useStyles = makeStyles((theme) => ({
         width:'100%'
     },
     loginBox:{
-        backgroundColor: 'rgb(253 218 36)',
+        //backgroundColor: 'rgb(253 218 36)',
+        backgroundImage: "url('login-back.jpg')",
+        backgroundSize: 'contain',
+        backgroundRepeat: 'round',
         height: '50vh',
         marginTop:'5vh'
     },
@@ -26,7 +36,7 @@ const useStyles = makeStyles((theme) => ({
         textAlign:'center'
     },
     innerBox:{
-        width:'50%'
+        width:'75%'
     },
     outerBox:{
         justifyContent:'center',
@@ -68,7 +78,7 @@ export function Login(){
         if(farmerID.value){
             setLoginButtonStatus(true)
             let responseStatus;
-            let apiEndPoint = 'http://localhost:8000/iot/device-type/'+farmerID.value;
+            let apiEndPoint = 'http://localhost:8000/iot/device/types/'+farmerID.value;
             
             const requestOptions = {
                 method: "GET",    
@@ -98,19 +108,22 @@ export function Login(){
     }
 
     return(
-        <>
+        <div className={classes.bgImage}>
             <div className={classes.wallImage}></div>
             <CssBaseline />
             <Container fixed>
                 <Paper  className={classes.loginBox} >
                     <Grid container spacing={3}>
-                        <Grid item xs={12}>
-                            <Typography variant="h3" component="h2" gutterBottom className={classes.heading}>
-                                Login To SmartHive
-                            </Typography>
+                        <Grid item xs={6}>
+                            
                         </Grid>
-                        <Grid item xs={12} className={classes.outerBox}>
+                        <Grid item xs={6} className={classes.outerBox}>
                             <Grid container spacing={3} className={classes.innerBox}>
+                                <Grid item xs={12}>
+                                    <Typography variant="h6" component="h6" gutterBottom className={classes.heading}>
+                                        Welcome back
+                                    </Typography>
+                                </Grid> 
                                 <Grid item xs={12}>
                                     {loginNotification.status && <Alert variant="filled"  elevation={6} severity={loginNotification.severity}  onClose={() => setLoginNotification({severity:"",msg:"",status:false})}>{loginNotification.msg}</Alert>}
                                 </Grid>
@@ -118,8 +131,19 @@ export function Login(){
                                     <TextField 
                                         className={classes.farmerIDBox} 
                                         required 
-                                        id="farmer-id" 
-                                        label="Farmer ID"
+                                        id="username" 
+                                        label="Username"
+                                        onChange={(e) => handleFarmerID(e)}
+                                        value={farmerID.value}
+                                    />
+                                    <FormHelperText className={classes.filedError}>{farmerID.error}</FormHelperText>
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <TextField 
+                                        className={classes.farmerIDBox} 
+                                        required 
+                                        id="password" 
+                                        label="Password"
                                         onChange={(e) => handleFarmerID(e)}
                                         value={farmerID.value}
                                     />
@@ -130,11 +154,11 @@ export function Login(){
                                     {loginButtonStatus&&<LinearProgress />}
                                 </Grid>
                                 <Grid item xs={12}>
-                                    <Typography variant="h6" component="h6" gutterBottom className={classes.heading}>OR</Typography>
+                                    <Typography gutterBottom className={classes.heading}>OR</Typography>
                                 </Grid>
                                 <Grid item xs={12}>
-                                    <Typography variant="h6" component="h6" gutterBottom className={classes.heading}>
-                                        <Link href="/register"> Click here! to Create New Farmer</Link>
+                                    <Typography gutterBottom className={classes.heading}>
+                                        <Link to="/register"> Click here! to Create New Farmer</Link>
                                     </Typography>
                                 </Grid>
                             </Grid>
@@ -143,7 +167,7 @@ export function Login(){
                     
                 </Paper >
             </Container>
-        </>
+        </div>
     );
 
 }
