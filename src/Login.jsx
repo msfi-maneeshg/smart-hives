@@ -2,7 +2,8 @@ import {useState} from 'react'
 import { makeStyles } from '@material-ui/core/styles';
 import {
     CssBaseline, Typography, Container, Paper, Grid,
-    TextField, Button, FormHelperText, LinearProgress
+    TextField, Button, FormHelperText, LinearProgress,
+    InputAdornment, IconButton 
 } from '@material-ui/core';
 import {Alert} from '@material-ui/lab';
 import { useHistory } from "react-router-dom";
@@ -10,6 +11,8 @@ import {useDispatch} from 'react-redux';
 import {changeLoginStatus} from './Reducers';
 import {API_URL} from './constant';
 import { Link } from "react-router-dom";
+import Visibility from '@material-ui/icons/Visibility';
+import VisibilityOff from '@material-ui/icons/VisibilityOff';
 
 const useStyles = makeStyles((theme) => ({
     bgImage :{
@@ -61,27 +64,66 @@ export function Login(){
     const classes = useStyles();
     const dispatch = useDispatch();
     let history = useHistory();
-    const [farmerID,setFarmerID] = useState({value:"",error:""})
-    const [loginStatus,setLoginStatus] = useState(false);
+    const [username,setUsername] = useState({value:"",error:""})
+    const [password,setPassword] = useState({value:"",error:""})
+    const [showPassword,setShowPassword] = useState(false)
     const [loginButtonStatus,setLoginButtonStatus] = useState(false)
     const [loginNotification,setLoginNotification] = useState({severity:"",msg:"",status:false})
 
-    const handleFarmerID = (e) => {
-        if(e.target.value === ""){
-            setFarmerID({value:"",error:"Please enter farmerID"})
-        }else{
-            setFarmerID({value:e.target.value,error:""})
+    const handleInputValues = (e) => {
+        switch(e.target.id){
+            case "username":
+                let usernameProps = username
+                usernameProps.value = e.target.value
+                usernameProps.error = ""
+                if(e.type === "blur" && e.target.value === ""){
+                    usernameProps.error = "Username can not be empty!"
+                }
+                setUsername({...usernameProps})
+                break;
+            case "password":
+                let passwordProps = password
+                passwordProps.error = ""
+                if(e.type === "blur" && e.target.value === ""){
+                    passwordProps.error = "Password can not be empty!"
+                }
+                passwordProps.value = e.target.value
+                setPassword({...passwordProps})
+                break;     
+            default:
+                break;     
         }
     }
 
     const CheckFarmerID = () => {
-        if(farmerID.value){
+        let isValid = true
+        let usernameProps = username
+        let passwordProps = password
+
+        if(username.value === ""){
+            isValid = false
+            usernameProps.error = "Username can not be empty!"
+        }
+
+        if(password.value === ""){
+            isValid = false
+            passwordProps.error = "Password can not be empty!"
+        }
+
+        setUsername({...usernameProps})
+        setPassword({...passwordProps})
+
+        if(isValid){
             setLoginButtonStatus(true)
             let responseStatus;
-            let apiEndPoint = 'http://localhost:8000/iot/device/types/'+farmerID.value;
+            let apiEndPoint = API_URL+'login'
             
             const requestOptions = {
-                method: "GET",    
+                method: "POST",
+                body: JSON.stringify({ 
+                    username:username.value,
+                    password:password.value
+                })        
             };
             fetch(apiEndPoint, requestOptions)
                 .then((response) => {
@@ -91,9 +133,8 @@ export function Login(){
                 })
                 .then((data) => {
                     if(responseStatus === 200){
-                        setLoginStatus(true)
                         setLoginNotification({severity:"success",msg:"Login successfull!",status:true})
-                        dispatch(changeLoginStatus(farmerID.value));
+                        dispatch(changeLoginStatus(data.content));
                         
                         setTimeout(() => {history.push('/home')}, 1000)
                         
@@ -115,7 +156,10 @@ export function Login(){
                 <Paper  className={classes.loginBox} >
                     <Grid container spacing={3}>
                         <Grid item xs={6}>
-                            
+                            <Typography variant="h3" component="h3" gutterBottom className={classes.heading}>
+                                SmartHives
+
+                            </Typography>
                         </Grid>
                         <Grid item xs={6} className={classes.outerBox}>
                             <Grid container spacing={3} className={classes.innerBox}>
@@ -133,21 +177,34 @@ export function Login(){
                                         required 
                                         id="username" 
                                         label="Username"
-                                        onChange={(e) => handleFarmerID(e)}
-                                        value={farmerID.value}
+                                        onChange={(e) => handleInputValues(e)}
+                                        onBlur={(e) => handleInputValues(e)}
+                                        value={username.value}
                                     />
-                                    <FormHelperText className={classes.filedError}>{farmerID.error}</FormHelperText>
+                                    <FormHelperText className={classes.filedError}>{username.error}</FormHelperText>
                                 </Grid>
                                 <Grid item xs={12}>
                                     <TextField 
                                         className={classes.farmerIDBox} 
                                         required 
+                                        type={showPassword ? 'text' : 'password'}
                                         id="password" 
                                         label="Password"
-                                        onChange={(e) => handleFarmerID(e)}
-                                        value={farmerID.value}
+                                        onChange={(e) => handleInputValues(e)}
+                                        onBlur={(e) => handleInputValues(e)}
+                                        value={password.value}
+                                        InputProps={{
+                                            endAdornment: <InputAdornment position="end">
+                                                <IconButton
+                                                    aria-label="toggle password visibility"
+                                                    onClick={() => setShowPassword(!showPassword)}
+                                                    >
+                                                    {showPassword ? <Visibility /> : <VisibilityOff />}
+                                                </IconButton>
+                                            </InputAdornment>,
+                                          }}
                                     />
-                                    <FormHelperText className={classes.filedError}>{farmerID.error}</FormHelperText>
+                                    <FormHelperText className={classes.filedError}>{password.error}</FormHelperText>
                                 </Grid>
                                 <Grid item xs={12}>
                                     <Button variant="contained" className={classes.loginButton} onClick={CheckFarmerID}>{loginButtonStatus?<>Verifying...</>:"Login"}</Button>
@@ -158,7 +215,7 @@ export function Login(){
                                 </Grid>
                                 <Grid item xs={12}>
                                     <Typography gutterBottom className={classes.heading}>
-                                        <Link to="/register"> Click here! to Create New Farmer</Link>
+                                        <Link to="/register"> Click here! to Create New Account!</Link>
                                     </Typography>
                                 </Grid>
                             </Grid>

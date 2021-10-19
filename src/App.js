@@ -3,7 +3,6 @@ import './App.css';
 import {Login} from './Login'
 import {Register} from './Register'
 import {Dashboard} from './Dashboard'
-import {Home} from './home2'
 import {
   BrowserRouter,
   Switch,
@@ -14,7 +13,7 @@ import {useSelector} from 'react-redux'
 
 export function App() {
   const loginStatus = useSelector((state) => state.UserLoginStatus);
-  console.log(loginStatus.isLoggedin)
+  console.log(loginStatus)
   return (
     <>
     <BrowserRouter>
@@ -42,7 +41,7 @@ export function App() {
           <Route exact path="/home">
             <Dashboard page="hourly-insight"/>
           </Route>
-          <Redirect from='*' to='/home' />
+          {/* <Redirect from='*' to='/home' /> */}
 
         </>
         }

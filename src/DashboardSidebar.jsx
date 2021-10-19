@@ -1,5 +1,4 @@
 import React from 'react';
-import clsx from 'clsx';
 import { makeStyles, useTheme } from '@material-ui/core/styles';
 import Drawer from '@material-ui/core/Drawer';
 import List from '@material-ui/core/List';
@@ -90,7 +89,7 @@ export function DashboardSidebar(props) {
                     color="textPrimary"
                     variant="h5"
                 >
-                    {loginStatus.userID}
+                    {loginStatus.username}
                 </Typography>
             </div>
             <Divider />

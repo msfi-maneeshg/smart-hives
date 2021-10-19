@@ -4,8 +4,10 @@ import {Typography,Container,Paper, Grid,TableCell,TableRow,TableBody,TableConta
 import {ExpandMore,ExpandLess} from '@material-ui/icons'
 import Chart from "react-google-charts";
 import {Alert} from '@material-ui/lab';
-import {useSelector} from 'react-redux'
-
+import {useSelector,useDispatch} from 'react-redux'
+import {changeLoginStatus} from './Reducers';
+import {API_URL} from './constant'
+import { useHistory } from "react-router-dom";
 
 const useStyles = makeStyles((theme) => ({
     root: {
@@ -82,12 +84,46 @@ const useStyles = makeStyles((theme) => ({
 
 export function RealtimeInsight(){
     const classes = useStyles();
-    const loginStatus = useSelector((state) => state.UserLoginStatus);
-    const farmer =loginStatus.userID
+    let history = useHistory();
+    const dispatch = useDispatch();
+    const userInfo = useSelector((state) => state.UserLoginStatus);
     const [isNotificationStart,setIsNotificationStart] = useState(false) 
     const [notificationData,setNotificationData] = useState(null)
     const [isDevicesLoaded,setIsDeviceLoaded] = useState(false)
     const [deviceList,setDeviceList] = useState({status:false,list:[]})
+    const [isTokenRefresh,setISTokenRefresh] = useState(false)
+
+    useEffect(() => {
+        if(isTokenRefresh){
+            let responseStatus;
+            setISTokenRefresh(false)
+            const requestOptions = {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'refreshToken': userInfo.refreshToken
+                }
+            };
+            let apiUrl = API_URL+"refresh-token"
+        
+
+            fetch(apiUrl, requestOptions)
+            .then((response) => {
+                responseStatus = response.status;
+                return response.json()   
+            })
+            .then((data) => {
+                if(responseStatus === 200){
+                    dispatch(changeLoginStatus(data.content));   
+                    setIsDeviceLoaded(false)
+                }else{
+                    dispatch(changeLoginStatus(""));  
+                    setTimeout(() => {history.push('/login')}, 100)
+                }
+            });
+            
+        }
+    },[isTokenRefresh])
 
     useEffect(() => {
         if(!isDevicesLoaded){
@@ -96,11 +132,12 @@ export function RealtimeInsight(){
             const requestOptions = {
                 method: 'GET',
                 headers: { 
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization':'bearer '+userInfo.userToken
                 }
             };
             
-            let apiUrl = "http://localhost:8000/iot/device/types/"+farmer+"/devices"
+            let apiUrl = API_URL+"devices"
         
             fetch(apiUrl, requestOptions)
             .then((response) => {
@@ -109,7 +146,11 @@ export function RealtimeInsight(){
             })
             .then((data) => {
                 if(responseStatus === 200){
-                    setDeviceList({status:true,list:data.results})
+                    setTimeout(() => {
+                        setDeviceList({status:true,list:data.results})
+                    }, 2000)
+                }else if (responseStatus === 403 && data.error === "Token is expired") {
+                    setISTokenRefresh(true)
                 }else{
                     setDeviceList({status:true,list:[]})
                 }
@@ -119,7 +160,7 @@ export function RealtimeInsight(){
     },[isDevicesLoaded])
 
     useEffect(() => {
-        if(!isNotificationStart && farmer){
+        if(!isNotificationStart){
             setIsNotificationStart(true)
             setInterval(() => {
                 const requestOptions = {
@@ -130,7 +171,7 @@ export function RealtimeInsight(){
                     },
                 };
                 
-                let apiUrl = 'https://433c346a-cb7c-4736-8e95-0bc99303fe1a-bluemix.cloudant.com/iotp-notification/_design/iotp/_view/by-deviceType?key="'+farmer+'"'
+                let apiUrl = 'https://433c346a-cb7c-4736-8e95-0bc99303fe1a-bluemix.cloudant.com/iotp-notification/_design/iotp/_view/by-deviceType?key="'+userInfo.username+'"'
             
             
                 fetch(apiUrl, requestOptions)
@@ -201,7 +242,7 @@ export function RealtimeInsight(){
                                 </TableHead>
                                 <TableBody>
                                     {deviceList.status && deviceList.list.length > 0 && deviceList.list.map((row) => (
-                                        <DeviceTableRow key={row.deviceId} farmer={farmer} deviceId={row.deviceId} />
+                                        <DeviceTableRow key={row.deviceId} username={userInfo.username} deviceId={row.deviceId} />
                                     ))}
                                     {deviceList.status && deviceList.list.length === 0  && <NoRecordFound/>}
                                     {!deviceList.status && deviceList.list.length === 0 && <LoadingData />}
@@ -232,10 +273,10 @@ function DeviceTableRow(props){
     };
     
     useEffect(() => {
-        if(open && !isEventDataLoaded && props.farmer && props.deviceId){
+        if(open && !isEventDataLoaded && props.username && props.deviceId){
             setIsEventDataLoaded(true)
             client = mqtt.connect('tcp://8l173e.messaging.internetofthings.ibmcloud.com/',connectOptions); 
-            client.subscribe("iot-2/type/"+props.farmer+"/id/"+props.deviceId+"/evt/HiveEvent/fmt/+");
+            client.subscribe("iot-2/type/"+props.username+"/id/"+props.deviceId+"/evt/HiveEvent/fmt/+");
             client.on('message', function (topic, message) {
                 // message is Buffer
                 var data = JSON.parse(message.toString())
@@ -317,6 +358,7 @@ function NoRecordFound(){
         </TableRow>
     );
 }
+
 function LoadingData(){
     return(
         <TableRow >
@@ -324,7 +366,6 @@ function LoadingData(){
         </TableRow>
     );
 }
-
 
 function RealTimeRecord(props){
     const classes = useStyles();

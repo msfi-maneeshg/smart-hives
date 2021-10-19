@@ -1,4 +1,5 @@
 import { React,useEffect, useState } from 'react';
+import {API_URL} from './constant'
 import { makeStyles } from '@material-ui/core/styles';
 import {
     Typography,Container,Paper, Grid, FormControl,
@@ -11,7 +12,9 @@ import Chart from "react-google-charts";
 import { WiThermometer,WiHumidity, } from "react-icons/wi";
 import { GiWeight } from "react-icons/gi";
 import {Alert} from '@material-ui/lab';
-import {useSelector} from 'react-redux'
+import {useSelector,useDispatch} from 'react-redux'
+import {changeLoginStatus} from './Reducers';
+import { useHistory } from "react-router-dom";
 
 
 const useStyles = makeStyles((theme) => ({
@@ -89,8 +92,9 @@ const useStyles = makeStyles((theme) => ({
 
 export function HourlyInsight(){
     const classes = useStyles();
-    const loginStatus = useSelector((state) => state.UserLoginStatus);
-    const farmer =loginStatus.userID
+    const dispatch = useDispatch();
+    const userInfo = useSelector((state) => state.UserLoginStatus);
+    let history = useHistory();
     var currentDate = new Date()
     currentDate.setHours(currentDate.getHours()-1) // get 1 hours back date time default
     let formatTwoDigits = (digit) => ("0" + digit).slice(-2);
@@ -102,9 +106,44 @@ export function HourlyInsight(){
     const [isNotificationStart,setIsNotificationStart] = useState(false) 
     const [notificationData,setNotificationData] = useState(null)
     const [period, setPeriod] = useState(formatTwoDigits(currentDate.getUTCHours())+"-"+formatTwoDigits(currentDate.getUTCHours()+1));
-    
+    const [isTokenRefresh,setISTokenRefresh] = useState(false)
+
     useEffect(() => {
-        if(!isDataLoaded && farmer){
+        if(isTokenRefresh){
+            let responseStatus;
+            setISTokenRefresh(false)
+            const requestOptions = {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'refreshToken': userInfo.refreshToken
+                }
+            };
+            let apiUrl = API_URL+"refresh-token"
+        
+
+            fetch(apiUrl, requestOptions)
+            .then((response) => {
+                responseStatus = response.status;
+                return response.json()   
+            })
+            .then((data) => {
+                if(responseStatus === 200){
+                    dispatch(changeLoginStatus(data.content));   
+                    setIsDataLoaded(false)
+                }else{
+                    dispatch(changeLoginStatus(""));  
+                    setTimeout(() => {history.push('/login')}, 100)
+                }
+                setTableDataLoader(false)
+            });
+            
+        }
+    },[isTokenRefresh])
+
+    useEffect(() => {
+        if(!isDataLoaded){
+            let responseStatus;
             setIsDataLoaded(true)
             setTableDataLoader(true)
             var selectedDateTemp =  new Date(selectedDate)
@@ -113,30 +152,37 @@ export function HourlyInsight(){
                 method: 'GET',
                 headers: { 
                     'Content-Type': 'application/json',
+                    'Authorization':'bearer '+userInfo.userToken
                 }
             };
-            var tempFarmer = (farmer==="Farmer-1-Hives")?"farmer-1":farmer;
-            let apiUrl = "http://localhost:8000/hive-data/"+tempFarmer+"/"+startKeyDate+"/"+period
+            let apiUrl = API_URL+"hive-data/"+startKeyDate+"/"+period
         
 
             fetch(apiUrl, requestOptions)
             .then((response) => {
+                responseStatus = response.status;
                 return response.json()   
             })
             .then((data) => {
-                if(data && data.length > 0){
-                    setHiveAggregatedData({list:data})   
+                if(responseStatus === 200 && data && data.length > 0){
+                    setTimeout(() => {
+                        setHiveAggregatedData({list:data})   
+                        setTableDataLoader(false)
+                    }, 2000)
+                }else if (responseStatus === 403 && data.error === "Token is expired") {
+                    setISTokenRefresh(true)
                 }else{
                     setHiveAggregatedData({list:[]})  
+                    setTableDataLoader(false)
                 }
-                setTableDataLoader(false)
+                
             });
             
         }
-    },[isDataLoaded, farmer, selectedDate])
+    },[isDataLoaded, selectedDate])
 
     useEffect(() => {
-        if(!isNotificationStart && farmer){
+        if(!isNotificationStart){
             setIsNotificationStart(true)
             setInterval(() => {
                 const requestOptions = {
@@ -147,7 +193,7 @@ export function HourlyInsight(){
                     },
                 };
                 
-                let apiUrl = 'https://433c346a-cb7c-4736-8e95-0bc99303fe1a-bluemix.cloudant.com/iotp-notification/_design/iotp/_view/by-deviceType?key="'+farmer+'"'
+                let apiUrl = 'https://433c346a-cb7c-4736-8e95-0bc99303fe1a-bluemix.cloudant.com/iotp-notification/_design/iotp/_view/by-deviceType?key="'+userInfo.username+'"'
             
             
                 fetch(apiUrl, requestOptions)
@@ -205,7 +251,7 @@ export function HourlyInsight(){
     }
 
     const rowHiveData = hiveAggregatedData.list.map((hiveData,index) => (
-        <Rows key={index} {...hiveData} farmer={farmer} />
+        <Rows key={index} {...hiveData} username={userInfo.username} />
     ))
 
     const PeriodList = [];
@@ -265,7 +311,7 @@ export function HourlyInsight(){
                         </Grid>
 
                     }
-                    {farmer && 
+                    {userInfo.username && 
                         <Grid item xs={12}>
                             <TableContainer component={Paper}>
                                 <Table aria-label="collapsible table">

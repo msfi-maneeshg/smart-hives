@@ -26,14 +26,15 @@ const useStyles = makeStyles((theme) => ({
     },
     registerBox:{
         backgroundColor: 'rgb(253 218 36)',
-        minHeight: '50vh',
+        minHeight: '45vh',
         marginTop:'5vh'
     },
     heading:{
         textAlign:'center'
     },
     innerBox:{
-        width:'75%'
+        width:'75%',
+        margin:"8px 0px 0px 8px"
     },
     outerBox:{
         justifyContent:'center',
@@ -62,7 +63,7 @@ const useStyles = makeStyles((theme) => ({
 
 export function Register(){
     const emailPattern = new RegExp(`^[a-zA-Z0-9+_.-]+[@]+[a-zA-Z0-9.-]+[.]+[a-zA-Z0-9.-]+$`);
-    const passwordPattern = new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,32})");
+    const passwordPattern = new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])(?=.{8,32})");
     
     const classes = useStyles();
     let history = useHistory();
@@ -113,7 +114,9 @@ export function Register(){
                 }
                 emailIDProps.value = e.target.value
                 setEmailID({...emailIDProps})
-                break;        
+                break;   
+            default:
+                break;             
         }
     }
 
@@ -194,13 +197,12 @@ export function Register(){
                 <Paper  className={classes.registerBox} >
                     <Grid container>
                         <Grid item xs={6} className={classes.registerBack}>
-                            
                         </Grid>
                         <Grid item xs={6} className={classes.outerBox}>
-                            <Grid container spacing={3} className={classes.innerBox}>
+                            <Grid container spacing={2} className={classes.innerBox}>
                                 <Grid item xs={12}>
                                     <Typography variant="h6" component="h2" gutterBottom className={classes.heading}>
-                                        Welcome To SmartHive Family
+                                        Welcome To SmartHives Family
                                     </Typography>
                                 </Grid>
                                 <Grid item xs={12}>

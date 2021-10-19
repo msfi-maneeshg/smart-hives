@@ -16,8 +16,12 @@ import DeleteIcon from '@material-ui/icons/Delete';
 import NotInterestedIcon from '@material-ui/icons/NotInterested';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import {Alert} from '@material-ui/lab';
-import {useSelector} from 'react-redux'
+import {useSelector,useDispatch} from 'react-redux'
+import {changeLoginStatus} from './Reducers';
 import {ExpandMore,ExpandLess} from '@material-ui/icons'
+import {API_URL} from './constant'
+import { useHistory } from "react-router-dom";
+import {RefreshToken} from "./common"
 
 const useStyles = makeStyles((theme) => ({
   table: {
@@ -63,39 +67,56 @@ const useStyles = makeStyles((theme) => ({
 
 export function MyDevices() {
     const classes = useStyles();
-    const loginStatus = useSelector((state) => state.UserLoginStatus);
-    const farmer =loginStatus.userID
+    let history = useHistory();
+    const dispatch = useDispatch();
+    const userInfo = useSelector((state) => state.UserLoginStatus);
     const [isDevicesLoaded,setIsDeviceLoaded] = useState(false)
     const [deviceList,setDeviceList] = useState({status:false,list:[]})
     const [returnMessage, setReturnMessage] = useState({status:false,severity:'',msg:''})
 
+    const GetDeviceList = async() => {
+        let responseStatus;
+        let responseData;
+        setIsDeviceLoaded(true)
+        let apiUrl = API_URL+"devices"
+        const requestOptions = {
+            method: 'GET',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization':'bearer '+userInfo.userToken
+            }
+        };
+    
+        await fetch(apiUrl, requestOptions)
+        .then((response) => {
+            responseStatus = response.status;
+            return response.json()   
+        })
+        .then((data) => {
+            responseData = data;
+        });
+
+        if(responseStatus === 200){
+            setDeviceList({status:true,list:responseData.results})
+        }else if (responseStatus === 403 && responseData.error === "Token is expired") {
+            let res = await RefreshToken(userInfo)
+            if(res.responseStatus === 200){
+                console.log(res)
+                dispatch(changeLoginStatus(res.responseData.content));   
+                setIsDeviceLoaded(false)
+            }else{
+                dispatch(changeLoginStatus(""));  
+                setTimeout(() => {history.push('/login')}, 100)
+            }
+            
+        }else{
+            setDeviceList({status:true,list:[]})
+        }
+    }
+
     useEffect(() => {
         if(!isDevicesLoaded){
-            let responseStatus;
-            setIsDeviceLoaded(true)
-            const requestOptions = {
-                method: 'GET',
-                headers: { 
-                    'Content-Type': 'application/json'
-                }
-            };
-            
-            let apiUrl = "http://localhost:8000/iot/device/types/"+farmer+"/devices"
-        
-            fetch(apiUrl, requestOptions)
-            .then((response) => {
-                responseStatus = response.status;
-                return response.json()   
-            })
-            .then((data) => {
-                console.log(data)
-                if(responseStatus === 200){
-                    setDeviceList({status:true,list:data.results})
-                }else{
-                    setDeviceList({status:true,list:[]})
-                }
-            });
-
+            GetDeviceList()
         }
     },[isDevicesLoaded])
 
@@ -120,7 +141,7 @@ export function MyDevices() {
                 </TableHead>
                 <TableBody>
                     {deviceList.status && deviceList.list.length > 0 && deviceList.list.map((row) => (
-                        <DeviceTableRow key={row.deviceId} returnMessage={returnMessage} setReturnMessage={setReturnMessage} farmer={farmer} deviceId={row.deviceId} deviceInfo={row} onClick={() => setIsDeviceLoaded(false)} />
+                        <DeviceTableRow key={row.deviceId} returnMessage={returnMessage} setReturnMessage={setReturnMessage} username={userInfo.username} deviceId={row.deviceId} deviceInfo={row} onClick={() => setIsDeviceLoaded(false)} />
                     ))}
                     {deviceList.status && deviceList.list.length === 0  && <NoRecordFound/>}
                     {!deviceList.status && deviceList.list.length === 0 && <LoadingData />}
@@ -142,7 +163,7 @@ function DeviceTableRow(props){
         if(props.deviceId){
             setAddButton({status:true,enable:true})
             let responseStatus;
-            let apiEndPoint = 'http://localhost:8000/iot/device/types/'+props.farmer+"/devices/"+props.deviceId;
+            let apiEndPoint = API_URL+'iot/device/types/'+props.username+"/devices/"+props.deviceId;
             
             const requestOptions = {
                 method: "DELETE"
@@ -244,8 +265,7 @@ function LoadingData(){
 
 function AddNewDevice(props){
     const classes = useStyles();
-    const loginStatus = useSelector((state) => state.UserLoginStatus);
-    const farmer =loginStatus.userID
+    const userInfo = useSelector((state) => state.UserLoginStatus);
     const [newDeviceID,setNewDeviceID] = useState({value:'',error:''})
     const [addButton,setAddButton] = useState({status:false,enable:false})
     const [returnMessage, setReturnMessage] = useState({status:false,severity:'',msg:''})
@@ -256,13 +276,17 @@ function AddNewDevice(props){
     const [newDeviceMetadata,setNewDeviceMetadata] = useState({...deviceMetadata})
 
     const AddNewHive = () => {
-        if(newDeviceID.value && farmer){
+        if(newDeviceID.value ){
             setAddButton({status:true,enable:false})
             let responseStatus;
-            let apiEndPoint = 'http://localhost:8000/iot/device/types/'+farmer+"/devices";
+            let apiEndPoint = API_URL+"devices";
             
             const requestOptions = {
                 method: "POST",   
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'refreshToken': userInfo.userToken
+                },
                 body: JSON.stringify({ 
                     deviceId:  newDeviceID.value,
                     deviceInfo:newDeviceProps,
@@ -297,10 +321,10 @@ function AddNewDevice(props){
     }
 
     const CheckAvailablilityOfDeviceID = () => {
-        if(newDeviceID.value && farmer){
+        if(newDeviceID.value){
             setAddButton({status:true,enable:false})
             let responseStatus;
-            let apiEndPoint = 'http://localhost:8000/iot/device/types/'+farmer+'/devices/'+newDeviceID.value;
+            let apiEndPoint = API_URL+"devices/"+newDeviceID.value;
             
             const requestOptions = {
                 method: "GET",    
@@ -542,8 +566,9 @@ function AddNewDevice(props){
 
 function EditDeviceInformation(props){
     const classes = useStyles();
-    const loginStatus = useSelector((state) => state.UserLoginStatus);
-    const farmer =loginStatus.userID
+    let history = useHistory();
+    const dispatch = useDispatch();
+    const userInfo = useSelector((state) => state.UserLoginStatus);
     const [addButton,setAddButton] = useState({status:false,enable:true})
     const [returnMessage, setReturnMessage] = useState({status:false,severity:'',msg:''})
     const [deviceAddStep,setDeviceAddStep] = useState(0)
@@ -568,39 +593,71 @@ function EditDeviceInformation(props){
     }
     const [newDeviceProps,setNewDeviceProps] = useState({...devicePropsReset})
     const [newDeviceMetadata,setNewDeviceMetadata] = useState({...deviceMetadata})
+    
+    const RefreshToken = () => {
+        let responseStatus;
+        const requestOptions = {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'refreshToken': userInfo.refreshToken
+            }
+        };
+        let apiUrl = API_URL+"refresh-token"
+    
+
+        fetch(apiUrl, requestOptions)
+        .then((response) => {
+            responseStatus = response.status;
+            return response.json()   
+        })
+        .then((data) => {
+            if(responseStatus === 200){
+                dispatch(changeLoginStatus(data.content));   
+            }else{
+                dispatch(changeLoginStatus(""));  
+                setTimeout(() => {history.push('/login')}, 100)
+            }
+        });
+    }
 
     const SaveDeviceInfo = () => {
-        if( farmer){
-            setAddButton({status:true,enable:false})
-            let responseStatus;
-            let apiEndPoint = 'http://localhost:8000/iot/device/types/'+farmer+"/devices/"+props.deviceInfo.deviceId;
-            
-            const requestOptions = {
-                method: "PUT",   
-                body: JSON.stringify({ 
-                    deviceInfo:newDeviceProps,
-                    metadata:newDeviceMetadata
-                }) 
-            };
-            fetch(apiEndPoint, requestOptions)
-                .then((response) => {
-                    const data = response.json();
-                    responseStatus = response.status;
-                    return data   ;
-                })
-                .then((data) => {
-                    if(responseStatus === 200){
-                        setReturnMessage({status:true,severity:"success",msg:data.content})
-                        setDeviceAddStep(0)
-                        setIsEditable(false)
-                    }else if (responseStatus === 400){
-                        setReturnMessage({status:true,severity:"warning",msg:data.error})
-                    }else{
-                        setReturnMessage({status:true,severity:"warning",msg:"Something went wrong!"})
-                    }
-                    setAddButton({status:false,enable:true})
-                });
-        }
+        setAddButton({status:true,enable:false})
+        let responseStatus;
+        let apiEndPoint = API_URL+'devices/'+props.deviceInfo.deviceId;
+        
+        const requestOptions = {
+            method: "PUT",   
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization':'bearer '+userInfo.userToken
+            },
+            body: JSON.stringify({ 
+                deviceInfo:newDeviceProps,
+                metadata:newDeviceMetadata
+            }) 
+        };
+        fetch(apiEndPoint, requestOptions)
+            .then((response) => {
+                const data = response.json();
+                responseStatus = response.status;
+                return data   ;
+            })
+            .then((data) => {
+                if(responseStatus === 200){
+                    setReturnMessage({status:true,severity:"success",msg:data.content})
+                    setDeviceAddStep(0)
+                    setIsEditable(false)
+                }else if (responseStatus === 403 && data.error === "Token is expired") {
+                    RefreshToken()
+                    SaveDeviceInfo()
+                }else if (responseStatus === 400){
+                    setReturnMessage({status:true,severity:"warning",msg:data.error})
+                }else{
+                    setReturnMessage({status:true,severity:"warning",msg:"Something went wrong!"})
+                }
+                setAddButton({status:false,enable:true})
+            });
     }
 
     const handleInformationInputBox = (e) => {
