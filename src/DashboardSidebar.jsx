@@ -9,13 +9,13 @@ import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import ListItem from '@material-ui/core/ListItem';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
-import {ListItemText, Avatar, Typography, Link} from '@material-ui/core';
+import {ListItemText, Avatar, Typography} from '@material-ui/core';
 import HourglassEmptyIcon from '@material-ui/icons/HourglassEmpty';
 import EqualizerIcon from '@material-ui/icons/Equalizer';
 import ExitToApp from '@material-ui/icons/ExitToApp';
 import {useDispatch, useSelector} from 'react-redux';
 import {changeLoginStatus} from './Reducers';
-
+import {Link} from 'react-router-dom'
 
 const drawerWidth = 240;
 
@@ -93,13 +93,13 @@ export function DashboardSidebar(props) {
             </div>
             <Divider />
             <List >
-                <Link href="/hourly-insight" className={classes.link}>
+                <Link to="/hourly-insight" className={classes.link}>
                     <ListItem button selected={props.page === 'hourly-insight'}>
                         <ListItemIcon><HourglassEmptyIcon /></ListItemIcon>
                         <ListItemText primary='Hourly Insight' />
                     </ListItem>
                 </Link>
-                <Link href="/realtime-insight" className={classes.link}>
+                <Link to="/realtime-insight" className={classes.link}>
                     <ListItem button selected={props.page === 'realtime-insight'}>
                         <ListItemIcon><EqualizerIcon /></ListItemIcon>
                         <ListItemText primary='Real-Time Insight' />
@@ -108,13 +108,13 @@ export function DashboardSidebar(props) {
             </List>
             <Divider />
             <List>
-                <Link href="/my-devices" className={classes.link}>
+                <Link to="/my-devices" className={classes.link}>
                     <ListItem button selected={props.page === 'my-devices'}>
                     <ListItemIcon><PhonelinkSetupIcon /></ListItemIcon>
                     <ListItemText primary='My Devices' />
                     </ListItem>
                 </Link>
-                <Link href="#"  onClick={() => dispatch(changeLoginStatus(""))} className={classes.link}>
+                <Link to="#"  onClick={() => dispatch(changeLoginStatus(""))} className={classes.link}>
                     <ListItem button>
                     <ListItemIcon><ExitToApp /></ListItemIcon>
                     <ListItemText primary='Logout' />

@@ -1,4 +1,4 @@
-import {React, useState, useEffect} from 'react';
+import {React, useState, useEffect,useMemo} from 'react';
 import { makeStyles } from '@material-ui/core/styles';
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
@@ -74,50 +74,51 @@ export function MyDevices() {
     const [deviceList,setDeviceList] = useState({status:false,list:[]})
     const [returnMessage, setReturnMessage] = useState({status:false,severity:'',msg:''})
 
-    const GetDeviceList = async() => {
-        let responseStatus;
-        let responseData;
-        setIsDeviceLoaded(true)
-        let apiUrl = API_URL+"devices"
-        const requestOptions = {
-            method: 'GET',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization':'bearer '+userInfo.userToken
-            }
-        };
     
-        await fetch(apiUrl, requestOptions)
-        .then((response) => {
-            responseStatus = response.status;
-            return response.json()   
-        })
-        .then((data) => {
-            responseData = data;
-        });
-
-        if(responseStatus === 200){
-            setDeviceList({status:true,list:responseData.results})
-        }else if (responseStatus === 403 && responseData.error === "Token is expired") {
-            let res = await RefreshToken(userInfo)
-            if(res.responseStatus === 200){
-                dispatch(changeLoginStatus(res.responseData.content));   
-                setIsDeviceLoaded(false)
-            }else{
-                dispatch(changeLoginStatus(""));  
-                setTimeout(() => {history.push('/login')}, 100)
-            }
-            
-        }else{
-            setDeviceList({status:true,list:[]})
-        }
-    }
 
     useEffect(() => {
         if(!isDevicesLoaded){
-            GetDeviceList()
+            const GetDeviceList = async() => {
+                let responseStatus;
+                let responseData;
+                setIsDeviceLoaded(true)
+                let apiUrl = API_URL+"devices"
+                const requestOptions = {
+                    method: 'GET',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization':'bearer '+userInfo.userToken
+                    }
+                };
+            
+                await fetch(apiUrl, requestOptions)
+                .then((response) => {
+                    responseStatus = response.status;
+                    return response.json()   
+                })
+                .then((data) => {
+                    responseData = data;
+                });
+        
+                if(responseStatus === 200){
+                    setDeviceList({status:true,list:responseData.results})
+                }else if (responseStatus === 403 && responseData.error === "Token is expired") {
+                    let res = await RefreshToken(userInfo)
+                    if(res.responseStatus === 200){
+                        dispatch(changeLoginStatus(res.responseData.content));   
+                        setIsDeviceLoaded(false)
+                    }else{
+                        dispatch(changeLoginStatus(""));  
+                        setTimeout(() => {history.push('/login')}, 100)
+                    }
+                    
+                }else{
+                    setDeviceList({status:true,list:[]})
+                }
+            }
+            GetDeviceList();
         }
-    },[isDevicesLoaded])
+    },[isDevicesLoaded, dispatch, history, userInfo])
 
   return (
     <>
@@ -162,60 +163,59 @@ function DeviceTableRow(props){
     const [returnMessage, setReturnMessage] = useState({status:false,severity:'',msg:''})
     const [isDelete,setIsDelete] = useState(false)
 
-    const deleteDevice = async() => {
-        if(props.deviceId){
-            setAddButton({status:true,enable:true})
-            let responseStatus;
-            let responseData;
-            let apiEndPoint = API_URL+"devices/"+props.deviceId;
-            
-            const requestOptions = {
-                method: "DELETE",
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization':'bearer '+userInfo.userToken
-                }
-            };
-            await fetch(apiEndPoint, requestOptions)
-                .then((response) => {
-                    const data = response.json();
-                    responseStatus = response.status;
-                    return data   ;
-                })
-                .then((data) => {
-                    responseData = data 
-                });
-            
-            if(responseStatus === 200){
-                props.setReturnMessage({status:true,severity:"success",msg:"Device has been removed!"})
-                setAddButton({status:false,enable:false})
-                setOpen(false)
-                props.onClick()
-            }else if (responseStatus === 403 && responseData.error === "Token is expired") {
-                let res = await RefreshToken(userInfo)
-                if(res.responseStatus === 200){
-                    dispatch(changeLoginStatus(res.responseData.content));   
-                    setIsDelete(true)
-                }else{
-                    dispatch(changeLoginStatus(""));  
-                    setTimeout(() => {history.push('/login')}, 100)
-                }   
-            }else if (responseStatus === 400){
-                setReturnMessage({status:true,severity:"warning",msg:responseData.Error})
-                setAddButton({status:false,enable:false})
-            }else{
-                setReturnMessage({status:true,severity:"warning",msg:"Something went wrong!"})
-                setAddButton({status:false,enable:false})
-            }    
-        }
-    }
-
     useEffect(() => {
         if(isDelete){
-            setIsDelete(false)
-            deleteDevice()
+            setIsDelete(false);
+            const deleteDevice = async() => {
+                if(props.deviceId){
+                    setAddButton({status:true,enable:true})
+                    let responseStatus;
+                    let responseData;
+                    let apiEndPoint = API_URL+"devices/"+props.deviceId;
+                    
+                    const requestOptions = {
+                        method: "DELETE",
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization':'bearer '+userInfo.userToken
+                        }
+                    };
+                    await fetch(apiEndPoint, requestOptions)
+                        .then((response) => {
+                            const data = response.json();
+                            responseStatus = response.status;
+                            return data   ;
+                        })
+                        .then((data) => {
+                            responseData = data 
+                        });
+                    
+                    if(responseStatus === 200){
+                        props.setReturnMessage({status:true,severity:"success",msg:"Device has been removed!"})
+                        setAddButton({status:false,enable:false})
+                        setOpen(false)
+                        props.onClick()
+                    }else if (responseStatus === 403 && responseData.error === "Token is expired") {
+                        let res = await RefreshToken(userInfo)
+                        if(res.responseStatus === 200){
+                            dispatch(changeLoginStatus(res.responseData.content));   
+                            setIsDelete(true)
+                        }else{
+                            dispatch(changeLoginStatus(""));  
+                            setTimeout(() => {history.push('/login')}, 100)
+                        }   
+                    }else if (responseStatus === 400){
+                        setReturnMessage({status:true,severity:"warning",msg:responseData.Error})
+                        setAddButton({status:false,enable:false})
+                    }else{
+                        setReturnMessage({status:true,severity:"warning",msg:"Something went wrong!"})
+                        setAddButton({status:false,enable:false})
+                    }    
+                }
+            }
+            deleteDevice();
         }
-    },[isDelete])
+    },[isDelete, dispatch, history, props, userInfo])
 
     return(
         <>
@@ -296,131 +296,131 @@ function AddNewDevice(props){
     const [addButton,setAddButton] = useState({status:false,enable:false})
     const [returnMessage, setReturnMessage] = useState({status:false,severity:'',msg:''})
     const [deviceAddStep,setDeviceAddStep] = useState(0)
-    const devicePropsReset = {serialNumber:"",manufacturer:"",model:"",deviceClass:"",description:"",firmwareVersion:"",hardwareVersion:"",descriptiveLocation:""}
-    const deviceMetadata = {minimumTemperature:30,maximumTemperature:40,minimumHumidity:40,maximumHumidity:70,minimumWeight:50,maximumWeight:200}
+    const devicePropsReset = useMemo(() => defaultDeviceInfo(), []);
+    const deviceMetadata = useMemo(() => defaultDeviceMeta(), []);
     const [newDeviceProps,setNewDeviceProps] = useState({...devicePropsReset})
     const [newDeviceMetadata,setNewDeviceMetadata] = useState({...deviceMetadata})
     const [isAddNewHive,setIsAddNewHive] = useState(false)
     const [isCheckAvailability,setIsCheckAvailability] = useState(false)
 
-    const AddNewHive = async() => {
-        if(newDeviceID.value ){
-            setAddButton({status:true,enable:false})
-            let responseStatus;
-            let responseData;
-            let apiEndPoint = API_URL+"devices";
-            
-            const requestOptions = {
-                method: "POST",   
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization':'bearer '+userInfo.userToken
-                },
-                body: JSON.stringify({ 
-                    deviceId:  newDeviceID.value,
-                    deviceInfo:newDeviceProps,
-                    metadata:newDeviceMetadata
-                }) 
-            };
-            await fetch(apiEndPoint, requestOptions)
-                .then((response) => {
-                    const data = response.json();
-                    responseStatus = response.status;
-                    return data   ;
-                })
-                .then((data) => {
-                    responseData = data  
-                });
-            if(responseStatus === 200){
-                setReturnMessage({status:true,severity:"success",msg:responseData.content})
-                props.onClick()
-                setNewDeviceID({value:'',error:''})
-                setNewDeviceProps({...devicePropsReset})
-                setNewDeviceMetadata({...deviceMetadata})
-                setDeviceAddStep(0)
-                setAddButton({status:false,enable:false})
-            }else if (responseStatus === 403 && responseData.error === "Token is expired") {
-                let res = await RefreshToken(userInfo)
-                if(res.responseStatus === 200){
-                    dispatch(changeLoginStatus(res.responseData.content));   
-                    setIsAddNewHive(true)
-                }else{
-                    dispatch(changeLoginStatus(""));  
-                    setTimeout(() => {history.push('/login')}, 100)
-                } 
-            }else if (responseStatus === 400){
-                setReturnMessage({status:true,severity:"warning",msg:responseData.Error})
-                setAddButton({status:false,enable:true})
-            }else{
-                setReturnMessage({status:true,severity:"warning",msg:"Something went wrong!"})
-                setAddButton({status:false,enable:true})
-            }    
-        }
-    }
-
-    const CheckAvailabilityOfDeviceID = async() => {
-        if(newDeviceID.value){
-            setAddButton({status:true,enable:false})
-            let responseStatus;
-            let responseData;
-            let apiEndPoint = API_URL+"devices/"+newDeviceID.value;
-            
-            const requestOptions = {
-                method: "GET",
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization':'bearer '+userInfo.userToken
-                },    
-            };
-
-            await fetch(apiEndPoint, requestOptions)
-                .then((response) => {
-                    let data; 
-                    if (response != ""){
-                        data = response.json();
-                    }
-                    responseStatus = response.status;
-                    return data   ;
-                })
-                .then((data) => {
-                    responseData = data
-                    
-                });
-
-            if(responseStatus === 404){
-                setDeviceAddStep(deviceAddStep+1)
-                setAddButton({status:false,enable:true})
-            }else if (responseStatus === 200){
-                setReturnMessage({status:true,severity:"warning",msg:"Please select an another DeviceID"})
-                setAddButton({status:false,enable:true})
-            }else if (responseStatus === 403 && responseData.error === "Token is expired") {
-                let res = await RefreshToken(userInfo)
-                if(res.responseStatus === 200){
-                    dispatch(changeLoginStatus(res.responseData.content));   
-                    setIsCheckAvailability(true)
-                }else{
-                    dispatch(changeLoginStatus(""));  
-                    setTimeout(() => {history.push('/login')}, 100)
-                }
-            }else{
-                setReturnMessage({status:true,severity:"warning",msg:"Something went wrong!"})
-                setAddButton({status:false,enable:true})
-            }
-            
-        }
-    }
-
     useEffect(() => {
         if(isAddNewHive){
-            setIsAddNewHive(false)
-            AddNewHive()
+            setIsAddNewHive(false);
+            const AddNewHive = async() => {
+                if(newDeviceID.value ){
+                    setAddButton({status:true,enable:false})
+                    let responseStatus;
+                    let responseData;
+                    let apiEndPoint = API_URL+"devices";
+                    
+                    const requestOptions = {
+                        method: "POST",   
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization':'bearer '+userInfo.userToken
+                        },
+                        body: JSON.stringify({ 
+                            deviceId:  newDeviceID.value,
+                            deviceInfo:newDeviceProps,
+                            metadata:newDeviceMetadata
+                        }) 
+                    };
+                    await fetch(apiEndPoint, requestOptions)
+                        .then((response) => {
+                            const data = response.json();
+                            responseStatus = response.status;
+                            return data   ;
+                        })
+                        .then((data) => {
+                            responseData = data  
+                        });
+                    if(responseStatus === 200){
+                        setReturnMessage({status:true,severity:"success",msg:responseData.content})
+                        props.onClick()
+                        setNewDeviceID({value:'',error:''})
+                        setNewDeviceProps({...devicePropsReset})
+                        setNewDeviceMetadata({...deviceMetadata})
+                        setDeviceAddStep(0)
+                        setAddButton({status:false,enable:false})
+                    }else if (responseStatus === 403 && responseData.error === "Token is expired") {
+                        let res = await RefreshToken(userInfo)
+                        if(res.responseStatus === 200){
+                            dispatch(changeLoginStatus(res.responseData.content));   
+                            setIsAddNewHive(true)
+                        }else{
+                            dispatch(changeLoginStatus(""));  
+                            setTimeout(() => {history.push('/login')}, 100)
+                        } 
+                    }else if (responseStatus === 400){
+                        setReturnMessage({status:true,severity:"warning",msg:responseData.Error})
+                        setAddButton({status:false,enable:true})
+                    }else{
+                        setReturnMessage({status:true,severity:"warning",msg:"Something went wrong!"})
+                        setAddButton({status:false,enable:true})
+                    }    
+                }
+            }
+            AddNewHive();
         }
-
+    },[isAddNewHive,deviceMetadata, devicePropsReset, dispatch, history, newDeviceID.value, newDeviceMetadata, newDeviceProps, props,userInfo])
+    
+    useEffect(() => {
         if(isCheckAvailability){
-            setIsCheckAvailability(false)
-            CheckAvailabilityOfDeviceID()
+            setIsCheckAvailability(false);
+            const CheckAvailabilityOfDeviceID = async() => {
+                if(newDeviceID.value){
+                    setAddButton({status:true,enable:false})
+                    let responseStatus;
+                    let responseData;
+                    let apiEndPoint = API_URL+"devices/"+newDeviceID.value;
+                    
+                    const requestOptions = {
+                        method: "GET",
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization':'bearer '+userInfo.userToken
+                        },    
+                    };
+        
+                    await fetch(apiEndPoint, requestOptions)
+                        .then((response) => {
+                            let data; 
+                            if (response !== ""){
+                                data = response.json();
+                            }
+                            responseStatus = response.status;
+                            return data   ;
+                        })
+                        .then((data) => {
+                            responseData = data
+                        });
+        
+                    if(responseStatus === 404){
+                        setDeviceAddStep(deviceAddStep+1)
+                        setAddButton({status:false,enable:true})
+                    }else if (responseStatus === 200){
+                        setReturnMessage({status:true,severity:"warning",msg:"Please select an another DeviceID"})
+                        setAddButton({status:false,enable:true})
+                    }else if (responseStatus === 403 && responseData.error === "Token is expired") {
+                        let res = await RefreshToken(userInfo)
+                        if(res.responseStatus === 200){
+                            dispatch(changeLoginStatus(res.responseData.content));   
+                            setIsCheckAvailability(true)
+                        }else{
+                            dispatch(changeLoginStatus(""));  
+                            setTimeout(() => {history.push('/login')}, 100)
+                        }
+                    }else{
+                        setReturnMessage({status:true,severity:"warning",msg:"Something went wrong!"})
+                        setAddButton({status:false,enable:true})
+                    }
+                    
+                }
+            }
+            CheckAvailabilityOfDeviceID();
         }
-    })
+    },[isCheckAvailability,deviceAddStep, dispatch, history, newDeviceID.value, userInfo])
+
     const handleDeviceIDInputBox = (e) => {
         if(addButton.status){
             return
@@ -638,6 +638,14 @@ function AddNewDevice(props){
     );
 }
 
+function defaultDeviceInfo(){
+    return {serialNumber:"",manufacturer:"",model:"",deviceClass:"",description:"",firmwareVersion:"",hardwareVersion:"",descriptiveLocation:""};
+}
+
+function defaultDeviceMeta(){
+    return {minimumTemperature:30,maximumTemperature:40,minimumHumidity:40,maximumHumidity:70,minimumWeight:50,maximumWeight:200};
+}
+
 function EditDeviceInformation(props){
     const classes = useStyles();
     let history = useHistory();
@@ -669,63 +677,63 @@ function EditDeviceInformation(props){
     const [newDeviceMetadata,setNewDeviceMetadata] = useState({...deviceMetadata})
     const [isSaveInfo,setIsSaveInfo] = useState(false)
 
-    const SaveDeviceInfo = async() => {
-        setAddButton({status:true,enable:false})
-        let responseStatus;
-        let responseData;
-        let apiEndPoint = API_URL+'devices/'+props.deviceInfo.deviceId;
-        
-        const requestOptions = {
-            method: "PUT",   
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization':'bearer '+userInfo.userToken
-            },
-            body: JSON.stringify({ 
-                deviceInfo:newDeviceProps,
-                metadata:newDeviceMetadata
-            }) 
-        };
-        await fetch(apiEndPoint, requestOptions)
-            .then((response) => {
-                const data = response.json();
-                responseStatus = response.status;
-                return data   ;
-            })
-            .then((data) => {
-                responseData = data
-            });
-
-        if(responseStatus === 200){
-            setReturnMessage({status:true,severity:"success",msg:responseData.content})
-            setDeviceAddStep(0)
-            setIsEditable(false)
-            setAddButton({status:false,enable:true})
-        }else if (responseStatus === 403 && responseData.error === "Token is expired") {
-            let res = await RefreshToken(userInfo)
-            if(res.responseStatus === 200){
-                dispatch(changeLoginStatus(res.responseData.content));   
-                setIsSaveInfo(true)
-                console.log(isSaveInfo)
-            }else{
-                dispatch(changeLoginStatus(""));  
-                setTimeout(() => {history.push('/login')}, 100)
-            }
-        }else if (responseStatus === 400){
-            setReturnMessage({status:true,severity:"warning",msg:responseData.error})
-            setAddButton({status:false,enable:true})
-        }else{
-            setReturnMessage({status:true,severity:"warning",msg:"Something went wrong!"})
-            setAddButton({status:false,enable:true})
-        }
-    }
+    
 
     useEffect(() => {
         if(isSaveInfo){
-            setIsSaveInfo(false)
-            SaveDeviceInfo()
+            setIsSaveInfo(false);
+            const SaveDeviceInfo = async() => {
+                setAddButton({status:true,enable:false})
+                let responseStatus;
+                let responseData;
+                let apiEndPoint = API_URL+'devices/'+props.deviceInfo.deviceId;
+                
+                const requestOptions = {
+                    method: "PUT",   
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization':'bearer '+userInfo.userToken
+                    },
+                    body: JSON.stringify({ 
+                        deviceInfo:newDeviceProps,
+                        metadata:newDeviceMetadata
+                    }) 
+                };
+                await fetch(apiEndPoint, requestOptions)
+                    .then((response) => {
+                        const data = response.json();
+                        responseStatus = response.status;
+                        return data   ;
+                    })
+                    .then((data) => {
+                        responseData = data
+                    });
+        
+                if(responseStatus === 200){
+                    setReturnMessage({status:true,severity:"success",msg:responseData.content})
+                    setDeviceAddStep(0)
+                    setIsEditable(false)
+                    setAddButton({status:false,enable:true})
+                }else if (responseStatus === 403 && responseData.error === "Token is expired") {
+                    let res = await RefreshToken(userInfo)
+                    if(res.responseStatus === 200){
+                        dispatch(changeLoginStatus(res.responseData.content));   
+                        setIsSaveInfo(true)
+                    }else{
+                        dispatch(changeLoginStatus(""));  
+                        setTimeout(() => {history.push('/login')}, 100)
+                    }
+                }else if (responseStatus === 400){
+                    setReturnMessage({status:true,severity:"warning",msg:responseData.error})
+                    setAddButton({status:false,enable:true})
+                }else{
+                    setReturnMessage({status:true,severity:"warning",msg:"Something went wrong!"})
+                    setAddButton({status:false,enable:true})
+                }
+            }
+            SaveDeviceInfo();
         }
-    },[isSaveInfo])
+    },[isSaveInfo,dispatch, history, newDeviceMetadata, newDeviceProps, props.deviceInfo.deviceId,userInfo])
 
     const handleInformationInputBox = (e) => {
         let propsValue = newDeviceProps
@@ -798,7 +806,8 @@ function EditDeviceInformation(props){
                     metadate.maximumWeight =  Number(e.target.value);
                 }     
                 break;    
-
+            default:
+                break;    
         }
         setNewDeviceMetadata(metadate)
     }

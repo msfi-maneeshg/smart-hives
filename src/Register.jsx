@@ -177,7 +177,6 @@ export function Register(){
                     return data   ;
                 })
                 .then((data) => {
-                    console.log(data)
                     if(responseStatus === 201){
                         setRegisterNotification({severity:"success",msg:"Register successfull!",status:true})
                         setInterval(() => {history.push('/login')}, 1000)

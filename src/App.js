@@ -12,8 +12,7 @@ import {
 import {useSelector} from 'react-redux'
 
 export function App() {
-  const loginStatus = useSelector((state) => state.UserLoginStatus);
-  console.log(loginStatus)
+  const userInfo = useSelector((state) => state.UserLoginStatus);
   return (
     <>
     <BrowserRouter>
@@ -27,7 +26,7 @@ export function App() {
         <Route exact path="/register">
           <Register/>
         </Route>
-        {loginStatus.isLoggedin && 
+        {userInfo.isLoggedin && 
         <>
           <Route exact path="/hourly-insight">
             <Dashboard page="hourly-insight"/>
@@ -45,7 +44,7 @@ export function App() {
 
         </>
         }
-        {!loginStatus.isLoggedin &&
+        {!userInfo.isLoggedin &&
         <Redirect from='*' to='/login' />
         }
         

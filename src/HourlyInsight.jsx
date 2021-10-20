@@ -106,57 +106,58 @@ export function HourlyInsight(){
     const [isNotificationStart,setIsNotificationStart] = useState(false) 
     const [notificationData,setNotificationData] = useState(null)
     const [period, setPeriod] = useState(formatTwoDigits(currentDate.getUTCHours())+"-"+formatTwoDigits(currentDate.getUTCHours()+1));
+    const [notificationIntervalID,setNotificationIntervalID] = useState(0)
 
-    useEffect(async() => {
+    useEffect(() => {
         if(!isDataLoaded){
-            let responseStatus;
-            let responseData;
-            setIsDataLoaded(true)
-            setTableDataLoader(true)
-            var selectedDateTemp =  new Date(selectedDate)
-            var startKeyDate = selectedDateTemp.getUTCFullYear()+"-"+formatTwoDigits(selectedDateTemp.getUTCMonth()+1)+"-"+formatTwoDigits(selectedDateTemp.getUTCDate())
-            const requestOptions = {
-                method: 'GET',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization':'bearer '+userInfo.userToken
-                }
-            };
-            let apiUrl = API_URL+"hourly-insight/"+startKeyDate+"/"+period
-        
-
-            await fetch(apiUrl, requestOptions)
-            .then((response) => {
-                responseStatus = response.status;
-                return response.json()   
-            })
-            .then((data) => {
-                responseData = data   
-            });
-
-            if(responseStatus === 200 && responseData.content && responseData.content.length > 0){
-                setTimeout(() => {
-                    setHiveAggregatedData({list:responseData.content})   
-                    setTableDataLoader(false)
-                }, 2000)
-            }else if (responseStatus === 403 && responseData.error === "Token is expired") {
-                let res = await RefreshToken(userInfo)
-                if(res.responseStatus === 200){
-                    dispatch(changeLoginStatus(res.responseData.content));   
-                    setIsDataLoaded(false)
-                }else{
-                    dispatch(changeLoginStatus(""));  
-                    setTimeout(() => {history.push('/login')}, 100)
-                }
-            }else{
-                setHiveAggregatedData({list:[]})  
-                setTableDataLoader(false)
-            }
+            const fatchDevice = async() => {
+                let responseStatus;
+                let responseData;
+                setIsDataLoaded(true)
+                setTableDataLoader(true)
+                var selectedDateTemp =  new Date(selectedDate)
+                var startKeyDate = selectedDateTemp.getUTCFullYear()+"-"+formatTwoDigits(selectedDateTemp.getUTCMonth()+1)+"-"+formatTwoDigits(selectedDateTemp.getUTCDate())
+                const requestOptions = {
+                    method: 'GET',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization':'bearer '+userInfo.userToken
+                    }
+                };
+                let apiUrl = API_URL+"hourly-insight/"+startKeyDate+"/"+period
             
-        }
-    },[isDataLoaded, selectedDate])
 
-    
+                await fetch(apiUrl, requestOptions)
+                .then((response) => {
+                    responseStatus = response.status;
+                    return response.json()   
+                })
+                .then((data) => {
+                    responseData = data   
+                });
+
+                if(responseStatus === 200 && responseData.content && responseData.content.length > 0){
+                    setTimeout(() => {
+                        setHiveAggregatedData({list:responseData.content})   
+                        setTableDataLoader(false)
+                    }, 2000)
+                }else if (responseStatus === 403 && responseData.error === "Token is expired") {
+                    let res = await RefreshToken(userInfo)
+                    if(res.responseStatus === 200){
+                        dispatch(changeLoginStatus(res.responseData.content));   
+                        setIsDataLoaded(false)
+                    }else{
+                        dispatch(changeLoginStatus(""));  
+                        setTimeout(() => {history.push('/login')}, 100)
+                    }
+                }else{
+                    setHiveAggregatedData({list:[]})  
+                    setTableDataLoader(false)
+                }
+            }
+            fatchDevice()
+        }
+    },[isDataLoaded, selectedDate, dispatch, history, period, userInfo])
 
     useEffect(() => {
         if(!isNotificationStart){
@@ -184,9 +185,16 @@ export function HourlyInsight(){
                 });
             }
             GetNotificationAlert();
-            setInterval(() => GetNotificationAlert(), 60000);
+            let intervalID = setInterval(() => {
+                GetNotificationAlert()
+            }, 60000);
+            setNotificationIntervalID(intervalID)
         }
-    },[isNotificationStart])
+        return () => {
+            clearInterval(notificationIntervalID);  
+            
+        }
+    },[isNotificationStart,userInfo.username,notificationIntervalID])
 
     const changeDate = (e) => {
         setSelectedDate(e.target.value)

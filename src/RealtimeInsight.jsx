@@ -92,11 +92,11 @@ export function RealtimeInsight(){
     const [notificationData,setNotificationData] = useState(null)
     const [isDevicesLoaded,setIsDeviceLoaded] = useState(false)
     const [deviceList,setDeviceList] = useState({status:false,list:[]})
+    const [notificationIntervalID,setNotificationIntervalID] = useState(0)
     
     useEffect(() => {
         if(!isDevicesLoaded){
             async function getDeviceList(){
-        
                 let responseStatus;
                 let responseData;
                 setIsDeviceLoaded(true)
@@ -140,8 +140,6 @@ export function RealtimeInsight(){
         }
     },[isDevicesLoaded,dispatch,history,userInfo])
 
-    
-
     useEffect(() => {
         if(!isNotificationStart){
             setIsNotificationStart(true);
@@ -156,7 +154,6 @@ export function RealtimeInsight(){
                 
                 let apiUrl = IBM_URL+'iotp-notification/_design/iotp/_view/by-deviceType?key="'+userInfo.username+'"'
             
-            
                 fetch(apiUrl, requestOptions)
                 .then((response) => {
                     return response.json()   
@@ -167,12 +164,17 @@ export function RealtimeInsight(){
                     }
                 });
             }
-
-            
             GetNotificationAlert();
-            setInterval(() => GetNotificationAlert(), 60000);
+            let intervalID = setInterval(() => {
+                GetNotificationAlert()
+            }, 60000);
+            setNotificationIntervalID(intervalID)
         }
-    },[isNotificationStart,userInfo.username])
+        return () => {
+            clearInterval(notificationIntervalID);   
+            
+        }
+    },[isNotificationStart,userInfo.username,notificationIntervalID])
 
     const handleCloseNotification = (e,info) => {
         const requestOptions = {
@@ -250,7 +252,6 @@ function DeviceTableRow(props){
     //const [isEventDataLoaded,setIsEventDataLoaded] = useState(false)
     const [weightArray,setWeightArray] = useState({data:[['x','Temperature','Humidity', 'Weight']]})
     var client = useRef();  
-
     let mqtt = require('mqtt');
 
     useEffect(() => {
@@ -287,10 +288,13 @@ function DeviceTableRow(props){
             });
             
         }
-        if(!open && client.current){
-            client.current.end()
+
+        return () => {
+            if(client.current){
+                client.current.end()
+            }
         }
-    },[mqtt,open, props.deviceId, props.username,weightArray.data]);
+    },[mqtt,open, props.deviceId, props.username,weightArray.data,props.index]);
 
     return(
         <>
