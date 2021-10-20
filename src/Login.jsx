@@ -138,8 +138,8 @@ export function Login(){
                         
                         setTimeout(() => {history.push('/home')}, 1000)
                         
-                    }else if(responseStatus === 404){
-                        setLoginNotification({severity:"error",msg:"Invalid farmer ID!",status:true})
+                    }else if(responseStatus === 404 || responseStatus === 400){
+                        setLoginNotification({severity:"error",msg:data.error,status:true})
                     }else{
                         setLoginNotification({severity:"error",msg:"Something went wrong!",status:true})
                     }
