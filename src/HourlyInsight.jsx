@@ -122,7 +122,7 @@ export function HourlyInsight(){
                     'Authorization':'bearer '+userInfo.userToken
                 }
             };
-            let apiUrl = API_URL+"hive-data/"+startKeyDate+"/"+period
+            let apiUrl = API_URL+"hourly-insight/"+startKeyDate+"/"+period
         
 
             await fetch(apiUrl, requestOptions)
@@ -134,9 +134,9 @@ export function HourlyInsight(){
                 responseData = data   
             });
 
-            if(responseStatus === 200 && responseData && responseData.length > 0){
+            if(responseStatus === 200 && responseData.content && responseData.content.length > 0){
                 setTimeout(() => {
-                    setHiveAggregatedData({list:responseData})   
+                    setHiveAggregatedData({list:responseData.content})   
                     setTableDataLoader(false)
                 }, 2000)
             }else if (responseStatus === 403 && responseData.error === "Token is expired") {
@@ -156,19 +156,21 @@ export function HourlyInsight(){
         }
     },[isDataLoaded, selectedDate])
 
+    
+
     useEffect(() => {
         if(!isNotificationStart){
-            setIsNotificationStart(true)
-            setInterval(() => {
+            setIsNotificationStart(true);
+            const GetNotificationAlert = () => {
                 const requestOptions = {
                     method: 'GET',
                     headers: { 
                         'Content-Type': 'application/json',
-                        'Authorization':'Basic YXBpa2V5LXYyLTI5bW51dWFyeXNuejZ6d3YxbnA4ZnpwODA4YTVlNDA1Mm00NzgzaGprZmxoOjk5Mzg1NmNhODczZWZiMzNjYzY3ZmM2YzgyZDZjN2U4'
+                        'Authorization':IBM_AUTH
                     },
                 };
                 
-                let apiUrl = 'https://433c346a-cb7c-4736-8e95-0bc99303fe1a-bluemix.cloudant.com/iotp-notification/_design/iotp/_view/by-deviceType?key="'+userInfo.username+'"'
+                let apiUrl = IBM_URL+'iotp-notification/_design/iotp/_view/by-deviceType?key="'+userInfo.username+'"'
             
             
                 fetch(apiUrl, requestOptions)
@@ -180,9 +182,11 @@ export function HourlyInsight(){
                         setNotificationData(data.rows)
                     }
                 });
-            }, 60000)
+            }
+            GetNotificationAlert();
+            setInterval(() => GetNotificationAlert(), 60000);
         }
-    })
+    },[isNotificationStart])
 
     const changeDate = (e) => {
         setSelectedDate(e.target.value)

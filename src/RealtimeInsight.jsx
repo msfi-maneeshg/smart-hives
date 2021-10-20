@@ -1,4 +1,4 @@
-import { React,useEffect, useState } from 'react';
+import { React,useEffect, useState, useRef } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
 import {Typography,Container,Paper, Grid,TableCell,TableRow,TableBody,TableContainer,Table,TableHead,IconButton,Collapse,CircularProgress,Grow,LinearProgress} from '@material-ui/core';
 import {ExpandMore,ExpandLess} from '@material-ui/icons'
@@ -93,54 +93,59 @@ export function RealtimeInsight(){
     const [isDevicesLoaded,setIsDeviceLoaded] = useState(false)
     const [deviceList,setDeviceList] = useState({status:false,list:[]})
     
-    useEffect(async() => {
+    useEffect(() => {
         if(!isDevicesLoaded){
-            let responseStatus;
-            let responseData;
-            setIsDeviceLoaded(true)
-            const requestOptions = {
-                method: 'GET',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization':'bearer '+userInfo.userToken
-                }
-            };
-            
-            let apiUrl = API_URL+"devices"
+            async function getDeviceList(){
         
-            await fetch(apiUrl, requestOptions)
-            .then((response) => {
-                responseStatus = response.status;
-                return response.json()   
-            })
-            .then((data) => {
-                responseData = data
-            });
+                let responseStatus;
+                let responseData;
+                setIsDeviceLoaded(true)
+                const requestOptions = {
+                    method: 'GET',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization':'bearer '+userInfo.userToken
+                    }
+                };
+                
+                let apiUrl = API_URL+"devices"
+            
+                await fetch(apiUrl, requestOptions)
+                .then((response) => {
+                    responseStatus = response.status;
+                    return response.json()   
+                })
+                .then((data) => {
+                    responseData = data
+                });
 
-            if(responseStatus === 200){
-                setTimeout(() => {
-                    setDeviceList({status:true,list:responseData.results})
-                }, 2000)
-            }else if (responseStatus === 403 && responseData.error === "Token is expired") {
-                let res = await RefreshToken(userInfo)
-                if(res.responseStatus === 200){
-                    dispatch(changeLoginStatus(res.responseData.content));   
-                    setIsDeviceLoaded(false)
+                if(responseStatus === 200){
+                    setTimeout(() => {
+                        setDeviceList({status:true,list:responseData.results})
+                    }, 2000)
+                }else if (responseStatus === 403 && responseData.error === "Token is expired") {
+                    let res = await RefreshToken(userInfo)
+                    if(res.responseStatus === 200){
+                        dispatch(changeLoginStatus(res.responseData.content));   
+                        setIsDeviceLoaded(false)
+                    }else{
+                        dispatch(changeLoginStatus(""));  
+                        setTimeout(() => {history.push('/login')}, 100)
+                    }
                 }else{
-                    dispatch(changeLoginStatus(""));  
-                    setTimeout(() => {history.push('/login')}, 100)
+                    setDeviceList({status:true,list:[]})
                 }
-            }else{
-                setDeviceList({status:true,list:[]})
-            }
-
+            } 
+            getDeviceList();   
         }
-    },[isDevicesLoaded])
+    },[isDevicesLoaded,dispatch,history,userInfo])
+
+    
 
     useEffect(() => {
         if(!isNotificationStart){
-            setIsNotificationStart(true)
-            setInterval(() => {
+            setIsNotificationStart(true);
+            const GetNotificationAlert = () => {
                 const requestOptions = {
                     method: 'GET',
                     headers: { 
@@ -161,9 +166,13 @@ export function RealtimeInsight(){
                         setNotificationData(data.rows)
                     }
                 });
-            }, 60000)
+            }
+
+            
+            GetNotificationAlert();
+            setInterval(() => GetNotificationAlert(), 60000);
         }
-    })
+    },[isNotificationStart,userInfo.username])
 
     const handleCloseNotification = (e,info) => {
         const requestOptions = {
@@ -219,8 +228,8 @@ export function RealtimeInsight(){
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {deviceList.status && deviceList.list.length > 0 && deviceList.list.map((row) => (
-                                        <DeviceTableRow key={row.deviceId} username={userInfo.username} deviceId={row.deviceId} />
+                                    {deviceList.status && deviceList.list.length > 0 && deviceList.list.map((row,index) => (
+                                        <DeviceTableRow key={index} index={index} username={userInfo.username} deviceId={row.deviceId} />
                                     ))}
                                     {deviceList.status && deviceList.list.length === 0  && <NoRecordFound/>}
                                     {!deviceList.status && deviceList.list.length === 0 && <LoadingData />}
@@ -238,24 +247,25 @@ export function RealtimeInsight(){
 function DeviceTableRow(props){
     const classes = useStyles();
     const [open, setOpen] = useState(false);
-    const [isEventDataLoaded,setIsEventDataLoaded] = useState(false)
+    //const [isEventDataLoaded,setIsEventDataLoaded] = useState(false)
     const [weightArray,setWeightArray] = useState({data:[['x','Temperature','Humidity', 'Weight']]})
-    var client;  
+    var client = useRef();  
 
     let mqtt = require('mqtt');
-    const connectOptions = {
-        rejectUnauthorized: false,
-        username:'a-8l173e-ahdw2reb1r',
-        password:'XKe_utxjf(jf+VHkXV',
-        clientId: 'a:8l173e:test1',
-    };
-    
+
     useEffect(() => {
-        if(open && !isEventDataLoaded && props.username && props.deviceId){
-            setIsEventDataLoaded(true)
-            client = mqtt.connect('tcp://8l173e.messaging.internetofthings.ibmcloud.com/',connectOptions); 
-            client.subscribe("iot-2/type/"+props.username+"/id/"+props.deviceId+"/evt/HiveEvent/fmt/+");
-            client.on('message', function (topic, message) {
+        if(open && props.deviceId){
+            //setIsEventDataLoaded(true)
+            const connectOptions = {
+                rejectUnauthorized: false,
+                username:'a-8l173e-ahdw2reb1r',
+                password:'XKe_utxjf(jf+VHkXV',
+                clientId: 'a:8l173e:receiving-'+props.index,
+            };
+
+            client.current = mqtt.connect('tcp://8l173e.messaging.internetofthings.ibmcloud.com/',connectOptions); 
+            client.current.subscribe("iot-2/type/"+props.username+"/id/"+props.deviceId+"/evt/HiveEvent/fmt/+");
+            client.current.on('message', function (topic, message) {
                 // message is Buffer
                 var data = JSON.parse(message.toString())
                 
@@ -274,10 +284,13 @@ function DeviceTableRow(props){
                     NewtempWeight.push([newTimestamp,data.temperature,data.humidity,data.weight])
                     setWeightArray({data:NewtempWeight})
                 }
-                console.log(open)
             });
+            
         }
-    });
+        if(!open && client.current){
+            client.current.end()
+        }
+    },[mqtt,open, props.deviceId, props.username,weightArray.data]);
 
     return(
         <>
@@ -345,72 +358,3 @@ function LoadingData(){
     );
 }
 
-function RealTimeRecord(props){
-    const classes = useStyles();
-    const [isEventDataLoaded,setIsEventDataLoaded] = useState(false)
-    const [weightArray,setWeightArray] = useState({data:[['x','Temperature','Humidity', 'Weight']]})
-
-    let mqtt = require('mqtt');
-    const connectOptions = {
-        rejectUnauthorized: false,
-        username:'a-8l173e-ahdw2reb1r',
-        password:'XKe_utxjf(jf+VHkXV',
-        clientId: 'a:8l173e:test1',
-    };
-    
-    
-    useEffect(() => {
-        if(!isEventDataLoaded && props.farmer && props.deviceId){
-            setIsEventDataLoaded(true)
-            props.client = mqtt.connect('tcp://8l173e.messaging.internetofthings.ibmcloud.com/',connectOptions); 
-            props.client.subscribe("iot-2/type/"+props.farmer+"/id/"+props.deviceId+"/evt/HiveEvent/fmt/+");
-            props.client.on('message', function (topic, message) {
-                // message is Buffer
-                var data = JSON.parse(message.toString())
-                
-                let tempWeight = weightArray.data
-                let NewtempWeight;
-                if(tempWeight.length > 50 ){
-                    // NewtempWeight = tempWeight.filter(function(element,index) {
-                    //     return index !== 1
-                    // });
-                    tempWeight.splice(1, 1);
-                    NewtempWeight = tempWeight
-                }else{
-                    NewtempWeight = tempWeight
-                }
-                let oldTimestamp = new Date(NewtempWeight[NewtempWeight.length-1][0])
-                let newTimestamp= new Date()
-                
-                if(newTimestamp.getTime() !== oldTimestamp.getTime()){
-                    NewtempWeight.push([newTimestamp,data.temperature,data.humidity,data.weight])
-                    setWeightArray({data:NewtempWeight})
-                }
-            });
-        }
-    });
-
-    return(
-        <Grid item xs={12} className={classes.dataBox}>
-            {weightArray.data && weightArray.data.length > 1 ?
-            <Chart
-                height={'500px'}
-                chartType="LineChart"
-                loader={<div>Loading Chart</div>}
-                data={weightArray.data}
-                options={{
-                    hAxis: {
-                    title: 'Time',
-                    },
-                    vAxis: {
-                    title: 'Temperature / Humidity / Weigth',
-                    },
-                }}
-                rootProps={{ 'data-testid': '1' }}
-            />:
-            <CircularProgress />       
-            }
-        </Grid>
-
-    )
-}
