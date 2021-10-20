@@ -130,7 +130,7 @@ export function MyDevices() {
             <Table className={classes.table} aria-label="simple table">
                 <TableHead>
                     <TableRow>
-                        <TableCell colSpan={2}><b>My Devices</b></TableCell>
+                        <TableCell colSpan={2}><Typography variant="h6" gutterBottom>My Devices</Typography></TableCell>
                     </TableRow>
                     <TableRow>
                         <TableCell>Device ID</TableCell>
@@ -524,7 +524,7 @@ function AddNewDevice(props){
             aria-controls="panel1a-content"
             id="panel1a-header"
             >
-                <Typography className={classes.heading}><b>Add New Device</b></Typography>
+                <Typography className={classes.heading}><Typography variant="h6" gutterBottom>Add New Device</Typography></Typography>
             </AccordionSummary>
             <AccordionDetails>
             <Grid container spacing={3}>

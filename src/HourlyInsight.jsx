@@ -304,11 +304,11 @@ export function HourlyInsight(){
                                 <Table aria-label="collapsible table">
                                     <TableHead>
                                         <TableRow>
-                                            <TableCell>Hive</TableCell>
-                                            <TableCell align="right">Temperature&nbsp;(°C)</TableCell>
-                                            <TableCell align="right">Humidity&nbsp;(%)</TableCell>
-                                            <TableCell align="right">Weight&nbsp;(Kg)</TableCell>
-                                            <TableCell align="right">View</TableCell>
+                                            <TableCell><Typography variant="h6" gutterBottom>Hives</Typography></TableCell>
+                                            <TableCell align="right"><Typography variant="h6" gutterBottom>Temperature&nbsp;(°C)</Typography></TableCell>
+                                            <TableCell align="right"><Typography variant="h6" gutterBottom>Humidity&nbsp;(%)</Typography></TableCell>
+                                            <TableCell align="right"><Typography variant="h6" gutterBottom>Weight&nbsp;(Kg)</Typography></TableCell>
+                                            <TableCell align="right"><Typography variant="h6" gutterBottom>View</Typography></TableCell>
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>

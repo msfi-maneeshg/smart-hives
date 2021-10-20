@@ -225,7 +225,7 @@ export function RealtimeInsight(){
                             <Table aria-label="collapsible table">
                                 <TableHead>
                                     <TableRow>
-                                        <TableCell>Hive</TableCell>
+                                        <TableCell><Typography variant="h6" gutterBottom>Hives</Typography></TableCell>
                                         <TableCell align="right">View</TableCell>
                                     </TableRow>
                                 </TableHead>
@@ -331,8 +331,10 @@ function DeviceTableRow(props){
                                             },
                                         }}
                                         rootProps={{ 'data-testid': '1' }}
-                                    />:
-                                    <CircularProgress />       
+                                    />:<>
+                                    <CircularProgress />    
+                                    <Typography variant="h6" gutterBottom>Please wait fetching real time data!</Typography>
+                                    </>   
                                     }
                                 </Grid>
                             </Grow>

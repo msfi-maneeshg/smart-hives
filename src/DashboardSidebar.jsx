@@ -87,6 +87,7 @@ export function DashboardSidebar(props) {
                 <Typography
                     color="textPrimary"
                     variant="h5"
+                    gutterBottom
                 >
                     {loginStatus.username}
                 </Typography>
