@@ -6,8 +6,9 @@ import Chart from "react-google-charts";
 import {Alert} from '@material-ui/lab';
 import {useSelector,useDispatch} from 'react-redux'
 import {changeLoginStatus} from './Reducers';
-import {API_URL} from './constant'
+import {API_URL, IBM_AUTH, IBM_URL} from './constant'
 import { useHistory } from "react-router-dom";
+import {RefreshToken} from "./common"
 
 const useStyles = makeStyles((theme) => ({
     root: {
@@ -91,43 +92,11 @@ export function RealtimeInsight(){
     const [notificationData,setNotificationData] = useState(null)
     const [isDevicesLoaded,setIsDeviceLoaded] = useState(false)
     const [deviceList,setDeviceList] = useState({status:false,list:[]})
-    const [isTokenRefresh,setISTokenRefresh] = useState(false)
-
-    useEffect(() => {
-        if(isTokenRefresh){
-            let responseStatus;
-            setISTokenRefresh(false)
-            const requestOptions = {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'refreshToken': userInfo.refreshToken
-                }
-            };
-            let apiUrl = API_URL+"refresh-token"
-        
-
-            fetch(apiUrl, requestOptions)
-            .then((response) => {
-                responseStatus = response.status;
-                return response.json()   
-            })
-            .then((data) => {
-                if(responseStatus === 200){
-                    dispatch(changeLoginStatus(data.content));   
-                    setIsDeviceLoaded(false)
-                }else{
-                    dispatch(changeLoginStatus(""));  
-                    setTimeout(() => {history.push('/login')}, 100)
-                }
-            });
-            
-        }
-    },[isTokenRefresh])
-
-    useEffect(() => {
+    
+    useEffect(async() => {
         if(!isDevicesLoaded){
             let responseStatus;
+            let responseData;
             setIsDeviceLoaded(true)
             const requestOptions = {
                 method: 'GET',
@@ -139,22 +108,31 @@ export function RealtimeInsight(){
             
             let apiUrl = API_URL+"devices"
         
-            fetch(apiUrl, requestOptions)
+            await fetch(apiUrl, requestOptions)
             .then((response) => {
                 responseStatus = response.status;
                 return response.json()   
             })
             .then((data) => {
-                if(responseStatus === 200){
-                    setTimeout(() => {
-                        setDeviceList({status:true,list:data.results})
-                    }, 2000)
-                }else if (responseStatus === 403 && data.error === "Token is expired") {
-                    setISTokenRefresh(true)
-                }else{
-                    setDeviceList({status:true,list:[]})
-                }
+                responseData = data
             });
+
+            if(responseStatus === 200){
+                setTimeout(() => {
+                    setDeviceList({status:true,list:responseData.results})
+                }, 2000)
+            }else if (responseStatus === 403 && responseData.error === "Token is expired") {
+                let res = await RefreshToken(userInfo)
+                if(res.responseStatus === 200){
+                    dispatch(changeLoginStatus(res.responseData.content));   
+                    setIsDeviceLoaded(false)
+                }else{
+                    dispatch(changeLoginStatus(""));  
+                    setTimeout(() => {history.push('/login')}, 100)
+                }
+            }else{
+                setDeviceList({status:true,list:[]})
+            }
 
         }
     },[isDevicesLoaded])
@@ -167,11 +145,11 @@ export function RealtimeInsight(){
                     method: 'GET',
                     headers: { 
                         'Content-Type': 'application/json',
-                        'Authorization':'Basic YXBpa2V5LXYyLTI5bW51dWFyeXNuejZ6d3YxbnA4ZnpwODA4YTVlNDA1Mm00NzgzaGprZmxoOjk5Mzg1NmNhODczZWZiMzNjYzY3ZmM2YzgyZDZjN2U4'
+                        'Authorization':IBM_AUTH
                     },
                 };
                 
-                let apiUrl = 'https://433c346a-cb7c-4736-8e95-0bc99303fe1a-bluemix.cloudant.com/iotp-notification/_design/iotp/_view/by-deviceType?key="'+userInfo.username+'"'
+                let apiUrl = IBM_URL+'iotp-notification/_design/iotp/_view/by-deviceType?key="'+userInfo.username+'"'
             
             
                 fetch(apiUrl, requestOptions)
@@ -192,11 +170,11 @@ export function RealtimeInsight(){
             method: 'DELETE',
             headers: { 
                 'Content-Type': 'application/json',
-                'Authorization':'Basic YXBpa2V5LXYyLTI5bW51dWFyeXNuejZ6d3YxbnA4ZnpwODA4YTVlNDA1Mm00NzgzaGprZmxoOjk5Mzg1NmNhODczZWZiMzNjYzY3ZmM2YzgyZDZjN2U4'
+                'Authorization':IBM_AUTH
             },
         };
         
-        let apiUrl = "https://433c346a-cb7c-4736-8e95-0bc99303fe1a-bluemix.cloudant.com/iotp-notification/"+info.value._id+"?rev="+info.value._rev
+        let apiUrl = IBM_URL+"iotp-notification/"+info.value._id+"?rev="+info.value._rev
     
     
         fetch(apiUrl, requestOptions)

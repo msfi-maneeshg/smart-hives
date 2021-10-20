@@ -1,7 +1,4 @@
 import {API_URL} from './constant'
-import { useHistory } from "react-router-dom";
-import {useDispatch,useSelector} from 'react-redux'
-import {changeLoginStatus} from './Reducers';
 
 export const RefreshToken = async(userInfo) => {
 

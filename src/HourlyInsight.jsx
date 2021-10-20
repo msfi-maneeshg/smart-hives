@@ -1,5 +1,5 @@
 import { React,useEffect, useState } from 'react';
-import {API_URL} from './constant'
+import {API_URL,IBM_AUTH,IBM_URL} from './constant'
 import { makeStyles } from '@material-ui/core/styles';
 import {
     Typography,Container,Paper, Grid, FormControl,
@@ -15,7 +15,7 @@ import {Alert} from '@material-ui/lab';
 import {useSelector,useDispatch} from 'react-redux'
 import {changeLoginStatus} from './Reducers';
 import { useHistory } from "react-router-dom";
-
+import {RefreshToken} from "./common"
 
 const useStyles = makeStyles((theme) => ({
     root: {
@@ -106,44 +106,11 @@ export function HourlyInsight(){
     const [isNotificationStart,setIsNotificationStart] = useState(false) 
     const [notificationData,setNotificationData] = useState(null)
     const [period, setPeriod] = useState(formatTwoDigits(currentDate.getUTCHours())+"-"+formatTwoDigits(currentDate.getUTCHours()+1));
-    const [isTokenRefresh,setISTokenRefresh] = useState(false)
 
-    useEffect(() => {
-        if(isTokenRefresh){
-            let responseStatus;
-            setISTokenRefresh(false)
-            const requestOptions = {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'refreshToken': userInfo.refreshToken
-                }
-            };
-            let apiUrl = API_URL+"refresh-token"
-        
-
-            fetch(apiUrl, requestOptions)
-            .then((response) => {
-                responseStatus = response.status;
-                return response.json()   
-            })
-            .then((data) => {
-                if(responseStatus === 200){
-                    dispatch(changeLoginStatus(data.content));   
-                    setIsDataLoaded(false)
-                }else{
-                    dispatch(changeLoginStatus(""));  
-                    setTimeout(() => {history.push('/login')}, 100)
-                }
-                setTableDataLoader(false)
-            });
-            
-        }
-    },[isTokenRefresh])
-
-    useEffect(() => {
+    useEffect(async() => {
         if(!isDataLoaded){
             let responseStatus;
+            let responseData;
             setIsDataLoaded(true)
             setTableDataLoader(true)
             var selectedDateTemp =  new Date(selectedDate)
@@ -158,25 +125,33 @@ export function HourlyInsight(){
             let apiUrl = API_URL+"hive-data/"+startKeyDate+"/"+period
         
 
-            fetch(apiUrl, requestOptions)
+            await fetch(apiUrl, requestOptions)
             .then((response) => {
                 responseStatus = response.status;
                 return response.json()   
             })
             .then((data) => {
-                if(responseStatus === 200 && data && data.length > 0){
-                    setTimeout(() => {
-                        setHiveAggregatedData({list:data})   
-                        setTableDataLoader(false)
-                    }, 2000)
-                }else if (responseStatus === 403 && data.error === "Token is expired") {
-                    setISTokenRefresh(true)
-                }else{
-                    setHiveAggregatedData({list:[]})  
-                    setTableDataLoader(false)
-                }
-                
+                responseData = data   
             });
+
+            if(responseStatus === 200 && responseData && responseData.length > 0){
+                setTimeout(() => {
+                    setHiveAggregatedData({list:responseData})   
+                    setTableDataLoader(false)
+                }, 2000)
+            }else if (responseStatus === 403 && responseData.error === "Token is expired") {
+                let res = await RefreshToken(userInfo)
+                if(res.responseStatus === 200){
+                    dispatch(changeLoginStatus(res.responseData.content));   
+                    setIsDataLoaded(false)
+                }else{
+                    dispatch(changeLoginStatus(""));  
+                    setTimeout(() => {history.push('/login')}, 100)
+                }
+            }else{
+                setHiveAggregatedData({list:[]})  
+                setTableDataLoader(false)
+            }
             
         }
     },[isDataLoaded, selectedDate])
@@ -227,11 +202,11 @@ export function HourlyInsight(){
             method: 'DELETE',
             headers: { 
                 'Content-Type': 'application/json',
-                'Authorization':'Basic YXBpa2V5LXYyLTI5bW51dWFyeXNuejZ6d3YxbnA4ZnpwODA4YTVlNDA1Mm00NzgzaGprZmxoOjk5Mzg1NmNhODczZWZiMzNjYzY3ZmM2YzgyZDZjN2U4'
+                'Authorization': IBM_AUTH
             },
         };
         
-        let apiUrl = "https://433c346a-cb7c-4736-8e95-0bc99303fe1a-bluemix.cloudant.com/iotp-notification/"+info.value._id+"?rev="+info.value._rev
+        let apiUrl = IBM_URL+"iotp-notification/"+info.value._id+"?rev="+info.value._rev
     
     
         fetch(apiUrl, requestOptions)

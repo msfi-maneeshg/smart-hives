@@ -3,7 +3,6 @@ let loginStaus = {isLoggedin:false,refreshToken:"",userToken:"",username:"",emai
 let userInfo = JSON.parse(localStorage.getItem('userInfo'));
 if(userInfo){
     loginStaus = {isLoggedin:true,refreshToken:userInfo.refereshtoken,userToken:userInfo.usertoken,username:userInfo.username,email:userInfo.email};
-    console.log(loginStaus)
 }
 export const checkLoginStatus = (state=loginStaus,action)=>{
     if(action.type === "loginStatus"){
