@@ -121,7 +121,7 @@ export function RealtimeInsight(){
 
                 if(responseStatus === 200){
                     setTimeout(() => {
-                        setDeviceList({status:true,list:responseData.results})
+                        setDeviceList({status:true,list:responseData.content.results})
                     }, 2000)
                 }else if (responseStatus === 403 && responseData.error === "Token is expired") {
                     let res = await RefreshToken(userInfo)

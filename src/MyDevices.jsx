@@ -74,8 +74,6 @@ export function MyDevices() {
     const [deviceList,setDeviceList] = useState({status:false,list:[]})
     const [returnMessage, setReturnMessage] = useState({status:false,severity:'',msg:''})
 
-    
-
     useEffect(() => {
         if(!isDevicesLoaded){
             const GetDeviceList = async() => {
@@ -101,7 +99,7 @@ export function MyDevices() {
                 });
         
                 if(responseStatus === 200){
-                    setDeviceList({status:true,list:responseData.results})
+                    setDeviceList({status:true,list:responseData.content.results})
                 }else if (responseStatus === 403 && responseData.error === "Token is expired") {
                     let res = await RefreshToken(userInfo)
                     if(res.responseStatus === 200){
