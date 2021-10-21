@@ -1,8 +1,8 @@
-
 import './App.css';
-import {Login} from './Login'
-import {Register} from './Register'
-import {Dashboard} from './Dashboard'
+import {Login} from './pages/Login'
+import {Register} from './pages/Register'
+import {Dashboard} from './pages/Dashboard'
+import {MyProfile} from './pages/MyProfile'
 import {
   BrowserRouter,
   Switch,
@@ -39,6 +39,9 @@ export function App() {
           </Route>
           <Route exact path="/home">
             <Dashboard page="hourly-insight"/>
+          </Route>
+          <Route exact path="/my-profile">
+            <Dashboard page="my-profile"/>
           </Route>
           {/* <Redirect from='*' to='/home' /> */}
 
