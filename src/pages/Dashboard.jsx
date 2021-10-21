@@ -17,7 +17,7 @@ const useStyles = makeStyles((theme) => ({
     display: 'flex',
   },
   bgImage :{
-    backgroundImage: "url('https://wallpaperaccess.com/full/1585697.jpg')",
+    backgroundImage: "url('background.jpg')",
     minHeight: '100vh',
     backgroundAttachment: 'fixed',
     backgroundRepeat: 'no-repeat',
