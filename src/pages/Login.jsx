@@ -13,6 +13,7 @@ import {API_URL} from '../constant';
 import { Link } from "react-router-dom";
 import Visibility from '@material-ui/icons/Visibility';
 import VisibilityOff from '@material-ui/icons/VisibilityOff';
+import { GiHoneyJar } from "react-icons/gi";
 
 const useStyles = makeStyles((theme) => ({
     bgImage :{
@@ -57,6 +58,12 @@ const useStyles = makeStyles((theme) => ({
     },
     filedError:{
         color:'red'
+    },
+    leftHeading:{
+        textAlign:'center',
+        display:'flex',
+        fontSize:'50px',
+        justifyContent:'center'
     }
 }));
 
@@ -155,11 +162,14 @@ export function Login(){
             <Container fixed>
                 <Paper  className={classes.loginBox} >
                     <Grid container spacing={3}>
-                        <Grid item xs={6}>
-                            <Typography variant="h3" component="h3" gutterBottom className={classes.heading}>
+                        <Grid item xs={6} className={classes.leftHeading}>
+                            <div className={classes.leftHeading}>
+                            <GiHoneyJar />  
+                            <Typography variant="h3" component="h3" gutterBottom style={{textShadow: '1px 1px 2px black'}}>
                                 SmartHives
-
                             </Typography>
+                            </div>
+                            
                         </Grid>
                         <Grid item xs={6} className={classes.outerBox}>
                             <Grid container spacing={3} className={classes.innerBox}>

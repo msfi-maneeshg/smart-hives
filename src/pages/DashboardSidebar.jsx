@@ -4,7 +4,6 @@ import Drawer from '@material-ui/core/Drawer';
 import List from '@material-ui/core/List';
 import Divider from '@material-ui/core/Divider';
 import IconButton from '@material-ui/core/IconButton';
-import PhonelinkSetupIcon from '@material-ui/icons/PhonelinkSetup';
 import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import ListItem from '@material-ui/core/ListItem';
@@ -12,11 +11,12 @@ import ListItemIcon from '@material-ui/core/ListItemIcon';
 import {ListItemText, Avatar, Typography} from '@material-ui/core';
 import HourglassEmptyIcon from '@material-ui/icons/HourglassEmpty';
 import EqualizerIcon from '@material-ui/icons/Equalizer';
-import ExitToApp from '@material-ui/icons/ExitToApp';
 import Person from '@material-ui/icons/Person';
 import {useDispatch, useSelector} from 'react-redux';
 import {changeLoginStatus} from '../Reducers';
 import {Link} from 'react-router-dom'
+import { GiBeehive } from "react-icons/gi";
+import { RiLogoutBoxLine } from "react-icons/ri";
 
 const drawerWidth = 240;
 
@@ -112,7 +112,7 @@ export function DashboardSidebar(props) {
             <List>
                 <Link to="/my-devices" className={classes.link}>
                     <ListItem button selected={props.page === 'my-devices'}>
-                    <ListItemIcon><PhonelinkSetupIcon /></ListItemIcon>
+                    <ListItemIcon><GiBeehive style={{fontSize:'25px'}}/></ListItemIcon>
                     <ListItemText primary='My Devices' />
                     </ListItem>
                 </Link>
@@ -124,7 +124,7 @@ export function DashboardSidebar(props) {
                 </Link>
                 <Link to="#"  onClick={() => dispatch(changeLoginStatus(""))} className={classes.link}>
                     <ListItem button>
-                    <ListItemIcon><ExitToApp /></ListItemIcon>
+                    <ListItemIcon><RiLogoutBoxLine style={{fontSize:'25px'}} /></ListItemIcon>
                     <ListItemText primary='Logout' />
                     </ListItem>
                 </Link>

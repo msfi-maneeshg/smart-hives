@@ -6,6 +6,7 @@ import Typography from '@material-ui/core/Typography';
 import IconButton from '@material-ui/core/IconButton';
 import MenuIcon from '@material-ui/icons/Menu';
 import clsx from 'clsx';
+import { GiHoneyJar } from "react-icons/gi";
 
 const useStyles = makeStyles((theme) => ({
     root: {
@@ -42,6 +43,14 @@ const useStyles = makeStyles((theme) => ({
     },
     toolBar:{
         backgroundColor:'#f4be22'
+    },
+    honeyJar:{
+      fontSize:"40px",
+      color:'#464646'
+    },
+    name:{
+      textShadow: '1px 1px 2px black',
+      color:'#464646'
     }
 }));
 
@@ -60,7 +69,6 @@ export function DashboardNavBar(props) {
       >
         <Toolbar className={classes.toolBar}>
           <IconButton
-            color="inherit"
             aria-label="open drawer"
             onClick={props.onClick}
             edge="start"
@@ -68,7 +76,8 @@ export function DashboardNavBar(props) {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap>
+          <GiHoneyJar className={classes.honeyJar} />
+          <Typography variant="h4" noWrap className={classes.name}>
             SmartHive
           </Typography>
         </Toolbar>
