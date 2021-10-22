@@ -87,6 +87,10 @@ const useStyles = makeStyles((theme) => ({
     },
     alertMessage:{
         marginTop: theme.spacing(2)
+    },
+    notificationBox:{
+        maxHeight: '200px',
+        overflow: 'auto'
     }
 }));
 
@@ -289,10 +293,12 @@ export function HourlyInsight(){
                         <Grid item xs={12}>
                         <Paper className={classes.paper}>
                         <Typography variant="h6" gutterBottom>Alerts</Typography>
-                            {notificationData.map((data,index) => (
-                                <Alert className={classes.alertMessage} variant="filled"  elevation={3} key={index} severity="warning"  onClose={(e) => handleCloseNotification(e,data)}>Alert for {data.value.deviceId}, Temperature is : {data.value.temperature}°C and Humidity is : {data.value.humidity}%</Alert>
-                                ))
-                            }
+                            <div className={classes.notificationBox}>
+                                {notificationData.map((data,index) => (
+                                    <Alert className={classes.alertMessage} variant="filled"  elevation={3} key={index} severity="warning"  onClose={(e) => handleCloseNotification(e,data)}>Alert for {data.value.deviceId}, Temperature is : {data.value.temperature}°C and Humidity is : {data.value.humidity}%</Alert>
+                                    ))
+                                }
+                            </div>
                         </Paper>
                         
                         </Grid>

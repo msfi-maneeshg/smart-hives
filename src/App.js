@@ -2,7 +2,6 @@ import './App.css';
 import {Login} from './pages/Login'
 import {Register} from './pages/Register'
 import {Dashboard} from './pages/Dashboard'
-import {MyProfile} from './pages/MyProfile'
 import {
   BrowserRouter,
   Switch,
@@ -28,6 +27,9 @@ export function App() {
         </Route>
         {userInfo.isLoggedin && 
         <>
+          <Route exact path="/home">
+            <Dashboard page="hourly-insight"/>
+          </Route>
           <Route exact path="/hourly-insight">
             <Dashboard page="hourly-insight"/>
           </Route>
@@ -37,18 +39,13 @@ export function App() {
           <Route exact path="/my-devices">
             <Dashboard page="my-devices"/>
           </Route>
-          <Route exact path="/home">
-            <Dashboard page="hourly-insight"/>
-          </Route>
           <Route exact path="/my-profile">
             <Dashboard page="my-profile"/>
           </Route>
-          {/* <Redirect from='*' to='/home' /> */}
-
         </>
         }
         {!userInfo.isLoggedin &&
-        <Redirect from='*' to='/login' />
+          <Redirect from='*' to='/login' />
         }
         
       </Switch>
