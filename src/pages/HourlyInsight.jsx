@@ -86,10 +86,11 @@ const useStyles = makeStyles((theme) => ({
         justifyContent: 'center',
     },
     alertMessage:{
-        marginTop: theme.spacing(2)
+        marginTop: theme.spacing(1),
+        marginBottom: theme.spacing(1)
     },
     notificationBox:{
-        maxHeight: '200px',
+        maxHeight: '175px',
         overflow: 'auto'
     }
 }));
@@ -257,6 +258,21 @@ export function HourlyInsight(){
         <Container className={classes.mainContainer}>
             <div className={classes.root}>
                 <Grid container spacing={3}>
+                    { notificationData !== null &&  notificationData.length !== 0 &&
+                        <Grid item xs={12}>
+                        <Paper className={classes.paper}>
+                        <Typography variant="h6" gutterBottom>Alerts</Typography>
+                            <div className={classes.notificationBox}>
+                                {notificationData.map((data,index) => (
+                                    <Alert className={classes.alertMessage} variant="filled"  elevation={3} key={index} severity="warning"  onClose={(e) => handleCloseNotification(e,data)}>Alert for {data.value.deviceId}, Temperature is : {data.value.temperature}°C and Humidity is : {data.value.humidity}%</Alert>
+                                    ))
+                                }
+                            </div>
+                        </Paper>
+                        
+                        </Grid>
+
+                    }
                     <Grid item xs={12}>
                         <Paper className={classes.paper}>
                             <TextField
@@ -288,24 +304,8 @@ export function HourlyInsight(){
                                 </Select>
                             </FormControl>
                         </Paper>
-                    </Grid>
-                    { notificationData !== null &&  notificationData.length !== 0 &&
-                        <Grid item xs={12}>
-                        <Paper className={classes.paper}>
-                        <Typography variant="h6" gutterBottom>Alerts</Typography>
-                            <div className={classes.notificationBox}>
-                                {notificationData.map((data,index) => (
-                                    <Alert className={classes.alertMessage} variant="filled"  elevation={3} key={index} severity="warning"  onClose={(e) => handleCloseNotification(e,data)}>Alert for {data.value.deviceId}, Temperature is : {data.value.temperature}°C and Humidity is : {data.value.humidity}%</Alert>
-                                    ))
-                                }
-                            </div>
-                        </Paper>
-                        
-                        </Grid>
-
-                    }
-                    {userInfo.username && 
-                        <Grid item xs={12}>
+                        <hr/>
+                        {userInfo.username && 
                             <TableContainer component={Paper}>
                                 <Table aria-label="collapsible table">
                                     <TableHead>
@@ -326,8 +326,8 @@ export function HourlyInsight(){
                                     </TableBody>
                                 </Table>
                             </TableContainer>
-                        </Grid>                       
-                    }
+                        }
+                    </Grid>                            
                 </Grid>
             </div>
         </Container>
