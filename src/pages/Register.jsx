@@ -180,7 +180,7 @@ export function Register(){
                 .then((data) => {
                     if(responseStatus === 201){
                         setRegisterNotification({severity:"success",msg:"Register successfull!",status:true})
-                        setInterval(() => {history.push('/login')}, 1000)
+                        setTimeout(() => {history.push('/login')}, 1000)
                     }else{
                         setRegisterNotification({severity:"warning",msg:data.error,status:true})
                     }
@@ -281,6 +281,7 @@ export function Register(){
                                     <Typography  gutterBottom className={classes.heading}>
                                         <Link to="/login"> Click here! If you already have an account!</Link>
                                     </Typography>
+                                    <button onClick={() => setTimeout(() => {history.push('/login')}, 1000)}>Back</button>
                                 </Grid>
                             </Grid>
                         </Grid>

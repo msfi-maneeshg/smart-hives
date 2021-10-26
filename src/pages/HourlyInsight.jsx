@@ -196,7 +196,9 @@ export function HourlyInsight(){
             setNotificationIntervalID(intervalID)
         }
         return () => {
-            clearInterval(notificationIntervalID);  
+            if(notificationIntervalID !== 0){
+                clearInterval(notificationIntervalID);  
+            }
             
         }
     },[isNotificationStart,userInfo.username,notificationIntervalID])

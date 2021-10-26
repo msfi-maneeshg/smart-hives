@@ -78,7 +78,7 @@ export function DashboardNavBar(props) {
           </IconButton>
           <GiHoneyJar className={classes.honeyJar} />
           <Typography variant="h4" noWrap className={classes.name}>
-            SmartHive
+            SmartHive 
           </Typography>
         </Toolbar>
         <div className={classes.wallImage}></div>

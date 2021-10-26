@@ -27,9 +27,6 @@ export function App() {
         </Route>
         {userInfo.isLoggedin && 
         <>
-          <Route exact path="/home">
-            <Dashboard page="hourly-insight"/>
-          </Route>
           <Route exact path="/hourly-insight">
             <Dashboard page="hourly-insight"/>
           </Route>

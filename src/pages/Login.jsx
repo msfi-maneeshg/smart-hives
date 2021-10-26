@@ -143,7 +143,7 @@ export function Login(){
                         setLoginNotification({severity:"success",msg:"Login successfull!",status:true})
                         dispatch(changeLoginStatus(data.content));
                         
-                        setTimeout(() => {history.push('/home')}, 1000)
+                        setTimeout(() => {history.push('/hourly-insight')}, 1000)
                         
                     }else if(responseStatus === 404 || responseStatus === 400){
                         setLoginNotification({severity:"error",msg:data.error,status:true})
